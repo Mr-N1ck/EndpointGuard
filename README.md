@@ -188,14 +188,14 @@ Most endpoint security tools are **bloated**, require **complex dependencies**, 
 ### One-Line Install
 
 ```bash
-git clone [https://github.com/Mr-N1ck/EndpointGuard.git](https://github.com/Mr-N1ck/EndpointGuard.git) && cd EndpointGuard && sudo bash install.sh
+git clone https://github.com/Mr-N1ck/EndpointGuard.git && cd EndpointGuard && sudo bash install.sh
 ```
 
 ### Manual Start
 
 ```bash
 # Clone the repository
-git clone [https://github.com/Mr-N1ck/EndpointGuard.git](https://github.com/Mr-N1ck/EndpointGuard.git)
+git clone https://github.com/Mr-N1ck/EndpointGuard.git
 cd EndpointGuard
 
 # Edit configuration (IMPORTANT — set your details first)
