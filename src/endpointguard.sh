@@ -1,4 +1,5 @@
 #!/bin/bash
+
 ###############################################################################
 #
 #  ███████╗███╗   ██╗██████╗ ██████╗  ██████╗ ██╗███╗   ██╗████████╗
@@ -6,8 +7,7 @@
 #  █████╗  ██╔██╗ ██║██║  ██║██████╔╝██║   ██║██║██╔██╗ ██║   ██║
 #  ██╔══╝  ██║╚██╗██║██║  ██║██╔═══╝ ██║   ██║██║██║╚██╗██║   ██║
 #  ███████╗██║ ╚████║██████╔╝██║     ╚██████╔╝██║██║ ╚████║   ██║
-#  ╚══════╝╚═╝  ╚═══╝╚═════╝ ╚═╝      ╚═════╝ ╚═╝╚═╝  ╚═══╝   ╚═╝
-#
+#  ╚══════╝╚═╝  ╚═══╝╚═════╝ ╚═╝      ╚═════╝ ╚═╝╚═╝  ╚═══╝ ╚═╝
 #   ██████╗ ██╗   ██╗ █████╗ ██████╗ ██████╗
 #  ██╔════╝ ██║   ██║██╔══██╗██╔══██╗██╔══██╗
 #  ██║  ███╗██║   ██║███████║██████╔╝██║  ██║
@@ -16,40 +16,33 @@
 #   ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝
 #
 #  EndpointGuard v4.0 — Advanced Endpoint Security with Instant
-#                        Intrusion Response
+#  Intrusion Response
 #
-#  Author:    Prince Gaur
-#  GitHub:    https://github.com/Mr-N1ck
-#  LinkedIn:  https://www.linkedin.com/in/mr-n1ck/
-#  License:   MIT
+#  Author:   Prince Gaur
+#  GitHub:   https://github.com/Mr-N1ck
+#  LinkedIn: https://www.linkedin.com/in/mr-n1ck/
 #
-#  Description:
-#    A zero-dependency, pure Bash endpoint security daemon that
-#    detects intrusions in 2-3 seconds, deploys honeypot traps,
-#    and provides instant automated response for Linux servers.
+#  FEATURES:
+#  1.  Atomic locking with flock (no TOCTOU race)
+#  2.  Event-driven monitoring where possible (inotifywait/auditd)
+#      with polling fallback + adaptive scan intervals
+#  3.  Multi-format log parsing (Debian/RHEL/journalctl JSON)
+#  4.  Crash-safe honeypot jail (auto-recovery on startup)
+#  5.  Process group management (no orphaned processes)
+#  6.  Resource-aware scanning with load throttling
 #
-#  Features:
-#    • 14 security monitoring modules
-#    • PAM hook for instant login detection
-#    • Crash-safe honeypot jail with auto-recovery
-#    • Atomic locking (flock) — no race conditions
-#    • Event-driven file monitoring (inotifywait)
-#    • Adaptive resource-aware scanning
-#    • Self-lockout prevention with owner IP detection
-#    • Three safety modes: monitor / moderate / active
+#  NEW IN v4.0 — INSTANT INTRUSION RESPONSE:
+#  7.  Rapid login detection (2-3 second response time)
+#  8.  PAM hook for instant detection of ALL login methods
+#  9.  Session-specific blocking (never harms your own sessions)
+#  10. Trusted account compromise → honeypot redirect
+#  11. Multi-method detection: SSH, console, su, VNC, RDP, tmux
+#  12. Auto-detect owner IP to prevent self-lockout
 #
-#  Usage:
-#    sudo bash endpointguard.sh {start|stop|restart|status|logs|
-#                                block|unblock|test|install|uninstall}
-#
-#  Documentation:
-#    https://github.com/Mr-N1ck/EndpointGuard/tree/main/docs
-#
-###############################################################################
-# SAFETY MODES:
-#   "monitor"  → Alert only, NEVER takes action (DEFAULT)
-#   "moderate" → Alert + auto-block brute force IPs
-#   "active"   → Full auto-response
+#  SAFETY MODES:
+#    "monitor"  → Alert only, NEVER takes action (DEFAULT)
+#    "moderate" → Alert + auto-block brute force IPs
+#    "active"   → Full auto-response
 #
 ###############################################################################
 
@@ -57,17 +50,17 @@ set -o pipefail
 
 # ========================== SAFETY MODE ==========================
 
-SAFETY_MODE="SET THIS ACC TO YOUR USUAGE"
+SAFETY_MODE="active"
 
 # ========================== CONFIGURATION ==========================
 
-TELEGRAM_BOT_TOKEN="YOUR_BOT_TOKEN"
-TELEGRAM_CHAT_ID="YOUR_CHAT_ID"
+TELEGRAM_BOT_TOKEN="YOUR_BOT_TOKEN_HERE"
+TELEGRAM_CHAT_ID="YOUR_CHAT_ID_HERE"
 
 TRUSTED_USER="your_username"
-ADDITIONAL_TRUSTED_USERS="your_additional_username"
-TRUSTED_IPS="SET YOUR TRUSTED IP"
-TRUSTED_NETWORKS="SET YOUR TRUSTED NETWORK"
+ADDITIONAL_TRUSTED_USERS=""
+TRUSTED_IPS=""
+TRUSTED_NETWORKS=""
 
 INSTALL_DIR="/opt/.epg"
 LOG_FILE="${INSTALL_DIR}/epg.log"
@@ -140,120 +133,133 @@ WHITELISTED_PROGRAMS=(
 )
 
 # --- Whitelisted Kernel Modules (NEVER alerted) ---
-# These are normal system modules that load/unload during regular operation
-WHITELISTED_KMODS=(
-    # GPU / Display drivers
-    i915 xe drm drm_kms_helper drm_exec drm_gpuvm drm_suballoc_helper
-    drm_display_helper drm_buddy drm_ttm_helper drm_client_lib ttm gpu_sched
-    nvidia nvidia_modeset nvidia_uvm nvidia_drm
-    amdgpu radeon nouveau
-    i2c_hid i2c_hid_acpi i2c_algo_bit
-    video backlight
-
-    # Audio / Sound
-    snd snd_hda_intel snd_hda_codec snd_hda_codec_generic snd_hda_codec_realtek
-    snd_hda_codec_realtek_lib snd_hda_codec_alc269 snd_hda_codec_hdmi
-    snd_hda_core snd_hwdep snd_pcm snd_pcm_dmaengine snd_timer
-    snd_seq snd_seq_device snd_seq_midi snd_seq_midi_event snd_rawmidi
-    snd_soc_core snd_soc_avs snd_soc_sdca snd_compress
-    snd_sof snd_sof_utils snd_sof_intel_hda_common snd_sof_intel_hda_generic
-    snd_sof_intel_hda snd_sof_pci snd_sof_pci_intel_tgl
-    snd_sof_pci_intel_mtl snd_sof_pci_intel_lnl
-    soundwire_intel soundwire_generic_allocation soundwire_cadence
-    soundwire_bus soundwire_intel_init
-    snd_soc_hda_codec snd_soc_hdac_hda snd_soc_acpi snd_soc_acpi_intel_match
-
-    # Crypto / Encryption
-    aesni_intel aes_x86_64 crypto_simd cryptd ghash_clmulni_intel
-    polyval_clmulni polyval_generic ccm gcm cbc cmac
-    algif_hash algif_skcipher af_alg
-    pkcs8_key_parser pkcs7_message x509_cert_parser
-
-    # Input / HID / USB
-    evdev hid hid_generic hid_multitouch hid_asus hid_logitech
-    hid_logitech_dj hid_logitech_hidpp hid_apple hid_cherry
-    hid_microsoft hid_lenovo hid_magicmouse
-    usbhid usbcore usb_common xhci_hcd xhci_pci ehci_hcd ehci_pci
-    ohci_hcd ohci_pci uhci_hcd usb_storage uas
-    btusb btrtl btintel btbcm btmtk bluetooth bnep rfcomm
-
-    # Networking / WiFi / Firewall
-    iwlwifi iwlmvm iwl7000 iwl8000 iwlax iwl_drv
-    rtw89_core rtw89_pci rtw89_8852ae rtw89_8852be rtw89_8852ce
-    rtw88_core rtw88_pci rtw88_8822be rtw88_8822ce
-    ath11k ath11k_pci ath10k_core ath10k_pci ath9k
-    mt76_core mt7921_common mt7921e mt7921s
-    cfg80211 mac80211 rfkill lib80211
-    r8169 r8152 e1000 e1000e igb igc ixgbe i40e ice
-    realtek atlantic
-    nf_tables nfnetlink nf_conntrack nf_nat nf_defrag_ipv4 nf_defrag_ipv6
-    nft_chain_nat nft_compat nft_counter nft_ct nft_fib
-    nft_fib_inet nft_fib_ipv4 nft_fib_ipv6
-    nft_limit nft_log nft_masq nft_nat nft_objref nft_quota
-    nft_redir nft_reject nft_reject_inet nft_reject_ipv4 nft_reject_ipv6
-    ip_tables ip6_tables iptable_filter iptable_nat iptable_mangle
-    ip6table_filter ip6table_nat
-    x_tables xt_conntrack xt_nat xt_tcpudp xt_addrtype xt_comment
-    xt_multiport xt_state xt_mark xt_MASQUERADE xt_LOG xt_limit
-    xt_connmark xt_set xt_recent
-    br_netfilter bridge veth macvlan ipvlan tun tap
-    bonding team 8021q
-
-    # Filesystem / Storage
-    fuse overlay overlayfs squashfs isofs udf
-    nfs nfsd nfsv3 nfsv4 lockd sunrpc grace
-    ext4 mbcache jbd2 btrfs xfs fat vfat msdos ntfs ntfs3
-    dm_mod dm_crypt dm_thin_pool dm_cache dm_mirror dm_snapshot
-    raid0 raid1 raid456 raid10 md_mod
-    ahci libahci libata sd_mod sr_mod sg scsi_mod
-    nvme nvme_core nvme_common
-
-    # Virtualization / Containers
-    kvm kvm_intel kvm_amd
-    vboxdrv vboxnetflt vboxnetadp vboxpci
-    vmw_vmci vmw_balloon vmxnet3 vmw_pvscsi
-    virtio virtio_pci virtio_net virtio_blk virtio_scsi virtio_ring
-    vhost vhost_net vhost_scsi
-    nbd loop
-
-    # Power Management / ACPI / Thermal
-    acpi_cpufreq intel_rapl_msr intel_rapl_common intel_powerclamp
-    intel_cstate intel_uncore processor_thermal_device
-    processor_thermal_mbox processor_thermal_rfim
-    int340x_thermal_zone int3400_thermal int3403_thermal
-    intel_pch_thermal intel_soc_dts_iosf
-    acpi_pad acpi_tad acpi_thermal_rel
-    thinkpad_acpi asus_wmi asus_nb_wmi platform_profile
-    wmi wmi_bmof mxm_wmi dell_wmi dell_smbios
-    battery ac thermal thermal_sys
-
-    # Platform / System
-    binfmt_misc efi_pstore configfs
-    crc32_pclmul crc32c_intel crct10dif_pclmul
-    lpc_ich i2c_i801 i2c_smbus i2c_piix4
-    pinctrl_icelake pinctrl_tigerlake pinctrl_alderlake
-    pinctrl_meteorlake pinctrl_lunarlake
-    mei mei_me mei_hdcp mei_pxp
-    idma64 pwm_lpss pwm_lpss_platform
-    intel_lpss intel_lpss_pci
-    tpm tpm_tis tpm_tis_core tpm_crb tpm_tis_spi
-    thunderbolt typec ucsi ucsi_acpi
-    serio atkbd libps2 psmouse
-    leds_asus ledtrig_audio
-    parport parport_pc ppdev lp
-    pcspkr snd_pcsp
-
+WHITELISTED_KERNEL_MODULES=(
+    # Graphics / Display
+    i915 amdgpu radeon nouveau nvidia nvidia_modeset nvidia_uvm nvidia_drm
+    drm drm_kms_helper ttm fb_sys_fops syscopyarea sysfillrect sysimgblt
+    fbdev fbcon vgastate vga16fb vboxvideo vmwgfx cirrus ast mgag200
+    # Audio
+    snd snd_hda_intel snd_hda_codec snd_hda_codec_realtek snd_hda_codec_generic
+    snd_hda_core snd_hwdep snd_pcm snd_timer snd_seq snd_seq_midi
+    snd_rawmidi snd_seq_device snd_compress snd_soc_core snd_pcm_dmaengine
+    snd_intel_dspcfg snd_intel_sdw_acpi soundcore
+    # Networking
+    e1000 e1000e igb ixgbe r8169 realtek r8152 r8153 ath9k ath10k_pci
+    ath10k_core ath11k_pci iwlwifi iwlmvm iwldvm mt76 mt7921e mt7921_common
+    rtw88_pci rtw88_core rtl8xxxu brcmfmac brcmutil cfg80211 mac80211
+    bluetooth btusb btintel btrtl btbcm bnep rfcomm
+    tun tap veth bridge br_netfilter nf_tables nf_conntrack nf_nat
+    iptable_filter iptable_nat ip_tables ip6_tables xt_conntrack xt_state
+    xt_nat xt_tcpudp xt_multiport xt_comment xt_addrtype xt_mark
+    nf_conntrack_netlink nfnetlink nf_defrag_ipv4 nf_defrag_ipv6
+    wireguard openvpn 8021q bonding team
+    # USB
+    usbcore usb_common usbhid hid hid_generic xhci_hcd xhci_pci ehci_hcd
+    ehci_pci ohci_hcd uhci_hcd usb_storage uas usbip_core usbip_host
+    # Storage / Filesystem
+    ahci libahci libata sd_mod sr_mod sg scsi_mod nvme nvme_core
+    ext4 jbd2 btrfs xfs fat vfat msdos ntfs ntfs3 fuse overlay
+    isofs udf crc32c_generic crc32c_intel dm_mod dm_crypt dm_mirror
+    dm_snapshot dm_thin_pool dm_log dm_region_hash md_mod raid0 raid1
+    raid10 raid456 loop nbd
+    # Input
+    evdev mousedev psmouse i2c_hid i2c_hid_acpi atkbd input_leds
+    joydev hid_multitouch hid_logitech hid_logitech_dj hid_apple
+    # Power / Thermal / CPU
+    acpi_cpufreq intel_pstate amd_pstate cpufreq_conservative cpufreq_ondemand
+    cpufreq_performance cpufreq_powersave cpufreq_userspace processor thermal
+    thermal_sys fan battery ac button int3400_thermal int3403_thermal
+    intel_rapl_msr intel_rapl_common intel_powerclamp coretemp k10temp
+    # Virtualization
+    kvm kvm_intel kvm_amd vboxdrv vboxnetflt vboxnetadp vboxpci
+    vmw_vsock_vmci_transport vmw_balloon vmw_vmci vmxnet3 vmw_pvscsi
+    hv_vmbus hv_storvsc hv_netvsc hv_utils hyperv_keyboard pci_hyperv
+    virtio virtio_pci virtio_net virtio_blk virtio_scsi virtio_balloon
+    virtio_console virtio_ring 9pnet 9pnet_virtio
+    # Crypto
+    aesni_intel aes_x86_64 ghash_clmulni_intel sha256_ssse3 sha512_ssse3
+    sha1_ssse3 crc32_pclmul crct10dif_pclmul cryptd glue_helper
+    crypto_simd af_alg algif_hash algif_skcipher
+    # Platform / ACPI
+    wmi wmi_bmof mxm_wmi asus_wmi asus_nb_wmi dell_wmi dell_smbios
+    hp_wmi thinkpad_acpi ideapad_laptop platform_profile int3400_thermal
+    int340x_thermal_zone intel_hid intel_vbtn sparse_keymap
+    video backlight leds_class led_class_flash
     # Misc common
-    zstd zstd_compress zstd_decompress lz4 lz4_compress lzo lzo_rle
-    cec drm_privacy_screen
+    lp ppdev parport parport_pc pcspkr serio serio_raw i2c_core i2c_piix4
+    i2c_smbus i2c_algo_bit gpio_generic pinctrl_amd pinctrl_intel
+    cec rc_core lirc_dev ir_common mei mei_hdcp mei_me mei_pxp
+    thunderbolt typec ucsi_acpi roles
+    efivarfs efi_pstore configfs
+    zram zsmalloc lz4 lz4_compress lz4_decompress lzo lzo_compress
+    lzo_decompress zlib_deflate zlib_inflate
+    rfkill ecdh_generic ecc
+    nls_utf8 nls_cp437 nls_ascii nls_iso8859_1
+    sunrpc nfsd nfs nfsv4 grace lockd auth_rpcgss
+    cifs smbfs_common
+    af_packet llc stp psnap p8022
+    ipmi_devintf ipmi_si ipmi_msghandler
+    edac_mce_amd edac_core
+    binfmt_misc autofs4
+    # Docker / Container
+    overlay br_netfilter xt_conntrack xt_MASQUERADE xt_addrtype
+    vxlan ip_vs ip_vs_rr ip_vs_wrr ip_vs_sh nf_conntrack_tftp
+    nf_nat_tftp
+    # AppArmor / Security
+    apparmor security_apparmor integrity ima evm
+)
 
-    # Security
-    integrity ima evm
-    apparmor security_apparmor
-    tomoyo
-    selinux
-    landlock
-    yama
+# --- Whitelisted SUID binaries (NEVER alerted) ---
+WHITELISTED_SUID_PATHS=(
+    # Browser sandboxes
+    "/opt/brave.com/brave/chrome-sandbox"
+    "/opt/google/chrome/chrome-sandbox"
+    "/usr/lib/chromium/chrome-sandbox"
+    "/usr/lib/chromium-browser/chrome-sandbox"
+    "/usr/lib/firefox/plugin-container"
+    "/snap/chromium/"
+    "/snap/firefox/"
+    # Standard system SUID binaries
+    "/usr/bin/sudo"
+    "/usr/bin/su"
+    "/usr/bin/passwd"
+    "/usr/bin/chsh"
+    "/usr/bin/chfn"
+    "/usr/bin/newgrp"
+    "/usr/bin/gpasswd"
+    "/usr/bin/mount"
+    "/usr/bin/umount"
+    "/usr/bin/fusermount"
+    "/usr/bin/fusermount3"
+    "/usr/bin/pkexec"
+    "/usr/bin/crontab"
+    "/usr/bin/at"
+    "/usr/bin/ssh-agent"
+    "/usr/bin/expiry"
+    "/usr/bin/chage"
+    "/usr/bin/wall"
+    "/usr/bin/write"
+    "/usr/lib/dbus-1.0/dbus-daemon-launch-helper"
+    "/usr/lib/openssh/ssh-keysign"
+    "/usr/lib/policykit-1/polkit-agent-helper-1"
+    "/usr/lib/polkit-1/polkit-agent-helper-1"
+    "/usr/libexec/polkit-agent-helper-1"
+    "/usr/lib/xorg/Xorg.wrap"
+    "/usr/lib/eject/dmcrypt-get-device"
+    "/usr/sbin/pppd"
+    "/usr/sbin/unix_chkpwd"
+    "/usr/sbin/mount.nfs"
+    "/usr/sbin/mount.cifs"
+    "/usr/sbin/userhelper"
+    "/usr/bin/locate"
+    "/usr/bin/mlocate"
+    "/usr/bin/ping"
+    "/usr/bin/traceroute"
+    "/usr/bin/staprun"
+    # Snap / Flatpak
+    "/snap/"
+    "/var/lib/flatpak/"
+    "/usr/lib/snapd/"
 )
 
 # --- Truly Malicious Patterns (almost never legitimate) ---
@@ -299,51 +305,81 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
+WHITE='\033[1;37m'
 BOLD='\033[1m'
+DIM='\033[2m'
 NC='\033[0m'
 
 # ========================== GLOBAL STATE ==========================
 
 CHILD_PIDS=()
 RUNNING=true
-MY_CURRENT_IPS=""       # Auto-populated at startup to prevent self-lockout
-KNOWN_SESSIONS_HASH=""  # For rapid login change detection
+MY_CURRENT_IPS=""          # Auto-populated at startup to prevent self-lockout
+KNOWN_SESSIONS_HASH=""     # For rapid login change detection
 
-# ========================== FIX #5: PROCESS GROUP MANAGEMENT ==========================
-# Run everything in a new process group so we can kill ALL descendants
+# ========================== BANNER ==========================
 
-start_in_process_group() {
-    # If not already a process group leader, become one
-    if [[ $$ != $(ps -o pgid= -p $$ | tr -d ' ') ]]; then
-        exec setsid "$0" "$@"
-    fi
+show_banner() {
+    clear
+    echo ""
+    echo -e "${CYAN}"
+    cat << 'BANNER_ART'
+    ███████╗███╗   ██╗██████╗ ██████╗  ██████╗ ██╗███╗   ██╗████████╗
+    ██╔════╝████╗  ██║██╔══██╗██╔══██╗██╔═══██╗██║████╗  ██║╚══██╔══╝
+    █████╗  ██╔██╗ ██║██║  ██║██████╔╝██║   ██║██║██╔██╗ ██║   ██║
+    ██╔══╝  ██║╚██╗██║██║  ██║██╔═══╝ ██║   ██║██║██║╚██╗██║   ██║
+    ███████╗██║ ╚████║██████╔╝██║     ╚██████╔╝██║██║ ╚████║   ██║
+    ╚══════╝╚═╝  ╚═══╝╚═════╝ ╚═╝      ╚═════╝ ╚═╝╚═╝  ╚═══╝ ╚═╝
+BANNER_ART
+    echo -e "${GREEN}"
+    cat << 'BANNER_ART2'
+     ██████╗ ██╗   ██╗ █████╗ ██████╗ ██████╗
+    ██╔════╝ ██║   ██║██╔══██╗██╔══██╗██╔══██╗
+    ██║  ███╗██║   ██║███████║██████╔╝██║  ██║
+    ██║   ██║██║   ██║██╔══██║██╔══██╗██║  ██║
+    ╚██████╔╝╚██████╔╝██║  ██║██║  ██║██████╔╝
+     ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝
+BANNER_ART2
+    echo -e "${NC}"
+    echo -e "  ${WHITE}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "  ${MAGENTA}${BOLD}  EndpointGuard v4.0${NC} ${DIM}— Advanced Endpoint Security Engine${NC}"
+    echo -e "  ${DIM}  Instant Intrusion Response | Honeypot Traps | Auto-Recovery${NC}"
+    echo -e "  ${WHITE}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "  ${DIM}Author:   ${NC}${WHITE}Prince Gaur${NC}"
+    echo -e "  ${DIM}GitHub:   ${NC}${CYAN}https://github.com/Mr-N1ck${NC}"
+    echo -e "  ${DIM}LinkedIn: ${NC}${CYAN}https://www.linkedin.com/in/mr-n1ck/${NC}"
+    echo ""
+    echo -e "  ${WHITE}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
 }
+
+# ========================== PROCESS GROUP MANAGEMENT ==========================
 
 cleanup() {
     RUNNING=false
     log_event "INFO" "Shutting down EndpointGuard"
 
     # Kill entire process group (all children + grandchildren)
-    # Use negative PID to kill the whole group
     local my_pgid
     my_pgid=$(ps -o pgid= -p $$ 2>/dev/null | tr -d ' ')
 
     if [[ -n "$my_pgid" ]] && [[ "$my_pgid" != "1" ]]; then
-        # Kill all processes in our group except ourselves
         kill -- -"$my_pgid" 2>/dev/null
     fi
 
     # Also explicitly kill tracked children
     for pid in "${CHILD_PIDS[@]}"; do
         kill "$pid" 2>/dev/null
-        # Kill any children of this child
         pkill -P "$pid" 2>/dev/null
     done
 
-    # Wait for all children to die
-    wait 2>/dev/null
+    # Wait briefly for children to die
+    sleep 1
 
-    # Clean orphaned subprocesses that might have escaped
+    # Clean orphaned subprocesses
     local my_pid=$$
     local orphans
     orphans=$(pgrep -P "$my_pid" 2>/dev/null || true)
@@ -352,8 +388,6 @@ cleanup() {
     fi
 
     rm -f "$PID_FILE"
-
-    # Release all flock locks
     find "$LOCK_DIR" -name "*.lock" -delete 2>/dev/null
 
     log_event "INFO" "EndpointGuard stopped cleanly"
@@ -377,9 +411,7 @@ track_child() {
     fi
 }
 
-# ========================== FIX #1: ATOMIC LOCKING WITH FLOCK ==========================
-# Uses flock for atomic file locking — no TOCTOU race condition
-# Falls back to mkdir if flock is not available
+# ========================== ATOMIC LOCKING WITH FLOCK ==========================
 
 FLOCK_AVAILABLE=false
 command -v flock &>/dev/null && FLOCK_AVAILABLE=true
@@ -391,20 +423,17 @@ with_lock() {
     local lockfile="${LOCK_DIR}/${lockname}.lock"
 
     if [[ "$FLOCK_AVAILABLE" == "true" ]]; then
-        # flock is atomic — no race condition possible
         (
             flock -w 10 200 || { log_event "WARN" "Lock timeout: ${lockname}"; return 1; }
             "$@"
         ) 200>"$lockfile"
     else
-        # Fallback: mkdir is atomic on Linux
         local max_attempts=10
         local attempt=0
 
         while ! mkdir "${lockfile}.d" 2>/dev/null; do
             attempt=$((attempt + 1))
             if [[ "$attempt" -ge "$max_attempts" ]]; then
-                # Stale lock — force remove
                 rm -rf "${lockfile}.d" 2>/dev/null
                 mkdir "${lockfile}.d" 2>/dev/null || return 1
                 break
@@ -431,10 +460,8 @@ log_event() {
     local timestamp
     timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo "unknown")
 
-    # Atomic append (>> is atomic for small writes on Linux)
     echo "[$timestamp] [$level] $message" >> "$LOG_FILE" 2>/dev/null
 
-    # Auto-truncate (with lock to prevent corruption)
     local lines
     lines=$(wc -l < "$LOG_FILE" 2>/dev/null || echo 0)
     if [[ "$lines" -gt 50000 ]]; then
@@ -495,7 +522,7 @@ Level: ${urgency}
 
 $(echo "$message" | head -c 2500)"
 
-    # Run in background with timeout — won't block or create orphans
+    # Run in background with timeout
     (curl -s --max-time 10 -X POST \
         "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
         -d "chat_id=${TELEGRAM_CHAT_ID}" \
@@ -572,7 +599,6 @@ is_own_process() {
     ppid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
     [[ "$ppid" == "$$" ]] && return 0
 
-    # Check process group
     local pgid
     pgid=$(ps -o pgid= -p "$pid" 2>/dev/null | tr -d ' ')
     local my_pgid
@@ -600,21 +626,36 @@ is_whitelisted_program() {
     return 1
 }
 
-# Check if a kernel module name is whitelisted
-is_whitelisted_kmod() {
-    local mod_name="$1"
-    [[ -z "$mod_name" ]] && return 0
+# Check if a kernel module is whitelisted
+is_whitelisted_kernel_module() {
+    local modname="$1"
+    [[ -z "$modname" ]] && return 0
 
-    for wk in "${WHITELISTED_KMODS[@]}"; do
-        [[ "$mod_name" == "$wk" ]] && return 0
+    for wmod in "${WHITELISTED_KERNEL_MODULES[@]}"; do
+        [[ "$modname" == "$wmod" ]] && return 0
+    done
+
+    return 1
+}
+
+# Check if a SUID binary path is whitelisted
+is_whitelisted_suid() {
+    local filepath="$1"
+    [[ -z "$filepath" ]] && return 0
+
+    for wpath in "${WHITELISTED_SUID_PATHS[@]}"; do
+        # Support prefix matching for paths ending with /
+        if [[ "$wpath" == */ ]]; then
+            [[ "$filepath" == "$wpath"* ]] && return 0
+        else
+            [[ "$filepath" == "$wpath" ]] && return 0
+        fi
     done
 
     return 1
 }
 
 # ========================== SELF-LOCKOUT PREVENTION ==========================
-# Auto-detect all IPs that belong to the current owner (you)
-# Called at startup to build a list of "definitely me" IPs
 
 detect_my_ips() {
     local ips=""
@@ -625,7 +666,7 @@ detect_my_ips() {
                 ifconfig 2>/dev/null | grep -oP 'inet (addr:)?\K[0-9.]+' || true)
     [[ -n "$iface_ips" ]] && ips="$iface_ips"
 
-    # Get the IP of the current SSH session (if we're running via SSH)
+    # Get the IP of the current SSH session
     if [[ -n "${SSH_CLIENT:-}" ]]; then
         local ssh_ip
         ssh_ip=$(echo "$SSH_CLIENT" | awk '{print $1}')
@@ -637,7 +678,7 @@ detect_my_ips() {
         [[ -n "$ssh_conn_ip" ]] && ips="$ips $ssh_conn_ip"
     fi
 
-    # Who is currently logged in as the trusted user RIGHT NOW at startup
+    # Who is currently logged in as the trusted user
     local who_ips
     who_ips=$(who 2>/dev/null | grep "^${TRUSTED_USER} " | awk '{print $5}' | tr -d '()' | grep -oP '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' || true)
     [[ -n "$who_ips" ]] && ips="$ips $who_ips"
@@ -653,7 +694,6 @@ detect_my_ips() {
     log_event "INFO" "Owner IPs detected: ${MY_CURRENT_IPS}"
 }
 
-# Check if a given IP belongs to the system owner
 is_my_own_ip() {
     local ip="$1"
     [[ -z "$ip" || "$ip" == "local" || "$ip" == ":0" || "$ip" == "unknown" ]] && return 0
@@ -662,20 +702,16 @@ is_my_own_ip() {
         [[ "$ip" == "$my_ip" ]] && return 0
     done
 
-    # Also check TRUSTED_IPS (always safe)
     is_trusted_ip "$ip" && return 0
 
     return 1
 }
 
-# Check if a specific login session belongs to the owner
 is_my_own_session() {
     local user="$1" ip="$2"
 
-    # If IP is one of ours, it's our session
     is_my_own_ip "$ip" && return 0
 
-    # Local/console sessions from trusted user are always ours
     if is_trusted_user "$user"; then
         [[ "$ip" == "local" || "$ip" == ":0" || -z "$ip" ]] && return 0
     fi
@@ -683,8 +719,7 @@ is_my_own_session() {
     return 1
 }
 
-# ========================== FIX #2: RESOURCE-AWARE SCANNING ==========================
-# Returns current load as integer
+# ========================== RESOURCE-AWARE SCANNING ==========================
 
 get_system_load() {
     local load
@@ -696,7 +731,6 @@ get_cpu_count() {
     nproc 2>/dev/null || grep -c ^processor /proc/cpuinfo 2>/dev/null || echo 1
 }
 
-# Returns appropriate scan interval based on system load
 get_adaptive_interval() {
     local base_interval="$1"
     local load cpus
@@ -705,17 +739,14 @@ get_adaptive_interval() {
     cpus=$(get_cpu_count)
 
     if [[ "$load" -gt $((cpus * 3)) ]]; then
-        # System very loaded — scan 4x slower
         echo $((base_interval * 4))
     elif [[ "$load" -gt $((cpus * 2)) ]]; then
-        # System loaded — scan 2x slower
         echo $((base_interval * 2))
     else
         echo "$base_interval"
     fi
 }
 
-# Check if heavy scanning is okay right now
 can_heavy_scan() {
     local load cpus
     load=$(get_system_load)
@@ -755,14 +786,12 @@ safe_block_ip() {
     is_trusted_ip "$ip" && { log_event "WARN" "REFUSED block trusted IP=${ip}"; return; }
     [[ "$ip" == "127.0.0.1" || "$ip" == "::1" ]] && return
 
-    # Use atomic lock for iptables operations
     with_lock "iptables" _block_ip_internal "$ip" "$reason"
 }
 
 _block_ip_internal() {
     local ip="$1" reason="$2"
 
-    # Check if already blocked (atomic with flock)
     iptables -C INPUT -s "$ip" -j DROP 2>/dev/null && return
 
     iptables -I INPUT -s "$ip" -j DROP 2>/dev/null
@@ -820,7 +849,7 @@ safe_lock_account() {
 _add_deny_user() {
     local user="$1"
     if grep -q "DenyUsers" /etc/ssh/sshd_config 2>/dev/null; then
-        grep -qE "DenyUsers.*\b${user}\b" /etc/ssh/sshd_config 2>/dev/null ||
+        grep -qE "DenyUsers.*\b${user}\b" /etc/ssh/sshd_config 2>/dev/null || \
             sed -i "s/^DenyUsers.*/& ${user}/" /etc/ssh/sshd_config 2>/dev/null
     else
         echo "DenyUsers ${user}" >> /etc/ssh/sshd_config 2>/dev/null
@@ -828,7 +857,7 @@ _add_deny_user() {
     systemctl reload sshd 2>/dev/null || service sshd reload 2>/dev/null
 }
 
-# ========================== FIX #4: CRASH-SAFE HONEYPOT JAIL ==========================
+# ========================== CRASH-SAFE HONEYPOT JAIL ==========================
 
 setup_honeypot_jail() {
     log_event "INFO" "Setting up honeypot"
@@ -873,10 +902,8 @@ FAKESCRIPT
     log_event "INFO" "Honeypot ready"
 }
 
-# Register jail so we can recover on crash
 register_jail() {
     local user="$1"
-    # Atomic add using flock
     with_lock "jail_registry" _register_jail_internal "$user"
 }
 
@@ -895,11 +922,9 @@ _unregister_jail_internal() {
     sed -i "/^${user}$/d" "$JAIL_REGISTRY" 2>/dev/null
 }
 
-# FIX #4: Recover all jailed users on startup (handles crash scenario)
 recover_jailed_users() {
     log_event "INFO" "Checking for crash-orphaned jails"
 
-    # Check registry
     if [[ -f "$JAIL_REGISTRY" ]] && [[ -s "$JAIL_REGISTRY" ]]; then
         while IFS= read -r user; do
             [[ -z "$user" ]] && continue
@@ -909,14 +934,10 @@ recover_jailed_users() {
         done < "$JAIL_REGISTRY"
     fi
 
-    # Also scan for any .bashrc.epg_bak files (belt and suspenders)
     for user_home in /home/*/; do
         if [[ -f "${user_home}.bashrc.epg_bak" ]]; then
             local user
             user=$(basename "$user_home")
-
-            # Check if user is currently logged in via untrusted session
-            # If not logged in, definitely restore
             if ! who 2>/dev/null | grep -q "^${user} "; then
                 log_event "INFO" "Restoring orphaned jail: ${user}"
                 deactivate_jail_for_user "$user"
@@ -938,16 +959,13 @@ activate_jail_for_session() {
     local user_home
     user_home=$(getent passwd "$target_user" 2>/dev/null | cut -d: -f6)
 
-    # Validate home directory
     [[ -z "$user_home" || "$user_home" == "/" || ! -d "$user_home" ]] && return
     [[ "$user_home" == "$HOME" ]] && return
 
     log_event "HIGH" "Jailing: ${target_user} ip=${target_ip}"
 
-    # Register BEFORE modifying (so crash recovery works)
     register_jail "$target_user"
 
-    # Backup bashrc
     if [[ -f "${user_home}/.bashrc" ]] && [[ ! -f "${user_home}/.bashrc.epg_bak" ]]; then
         cp -p "${user_home}/.bashrc" "${user_home}/.bashrc.epg_bak" 2>/dev/null
     fi
@@ -986,7 +1004,7 @@ deactivate_jail_for_user() {
     fi
 }
 
-# ========================== FIX #3: MULTI-FORMAT LOG PARSING ==========================
+# ========================== MULTI-FORMAT LOG PARSING ==========================
 
 find_auth_log() {
     if [[ -f /var/log/auth.log ]]; then
@@ -998,27 +1016,21 @@ find_auth_log() {
     fi
 }
 
-# Parse SSH events from multiple log formats
 parse_ssh_success() {
     local line="$1"
     local user="" ip="" method=""
 
-    # Format 1: Debian/Ubuntu auth.log
-    # "Accepted publickey for root from 192.168.1.5 port 22 ssh2"
     if echo "$line" | grep -qiE "Accepted (password|publickey|keyboard)" 2>/dev/null; then
         user=$(echo "$line" | grep -oP 'for \K\S+' 2>/dev/null | head -1)
         ip=$(echo "$line" | grep -oP 'from \K[0-9a-fA-F.:]+' 2>/dev/null | head -1)
         method=$(echo "$line" | grep -oP 'Accepted \K\S+' 2>/dev/null | head -1)
     fi
 
-    # Format 2: RHEL/CentOS style
-    # "pam_unix(sshd:session): session opened for user root"
     if [[ -z "$user" ]] && echo "$line" | grep -qiE "sshd:session.*session opened" 2>/dev/null; then
         user=$(echo "$line" | grep -oP 'for user \K\S+' 2>/dev/null | head -1)
         method="pam"
     fi
 
-    # Format 3: systemd journal JSON (if using journalctl --output=json)
     if [[ -z "$user" ]] && echo "$line" | grep -qiE '"_COMM":"sshd".*"MESSAGE":"Accepted' 2>/dev/null; then
         user=$(echo "$line" | grep -oP '"MESSAGE":"Accepted \S+ for \K\S+' 2>/dev/null | head -1)
         ip=$(echo "$line" | grep -oP 'from \K[0-9a-fA-F.:]+' 2>/dev/null | head -1)
@@ -1032,19 +1044,16 @@ parse_ssh_failure() {
     local line="$1"
     local user="" ip=""
 
-    # Format 1: "Failed password for root from 192.168.1.5"
     if echo "$line" | grep -qiE "Failed password" 2>/dev/null; then
         user=$(echo "$line" | grep -oP 'for (invalid user )?\K\S+' 2>/dev/null | head -1)
         ip=$(echo "$line" | grep -oP 'from \K[0-9a-fA-F.:]+' 2>/dev/null | head -1)
     fi
 
-    # Format 2: "authentication failure" (PAM style)
     if [[ -z "$user" ]] && echo "$line" | grep -qiE "authentication failure" 2>/dev/null; then
         user=$(echo "$line" | grep -oP '(user=|ruser=)\K\S+' 2>/dev/null | head -1)
         ip=$(echo "$line" | grep -oP '(rhost=)\K[0-9a-fA-F.:]+' 2>/dev/null | head -1)
     fi
 
-    # Format 3: "Invalid user admin from 192.168.1.5"
     if [[ -z "$user" ]] && echo "$line" | grep -qiE "Invalid user" 2>/dev/null; then
         user=$(echo "$line" | grep -oP 'Invalid user \K\S+' 2>/dev/null | head -1)
         ip=$(echo "$line" | grep -oP 'from \K[0-9a-fA-F.:]+' 2>/dev/null | head -1)
@@ -1088,17 +1097,9 @@ Action: Blocking IP + redirecting to honeypot in 2 seconds" "CRITICAL"
         (
             sleep 2
             log_event "CRITICAL" "Responding to untrusted IP ${target_ip} on trusted account ${target_user}"
-
-            # Step 1: Block the attacker IP immediately
             safe_block_ip "$target_ip" "compromised_trusted_account_${target_user}"
-
-            # Step 2: Redirect the attacker session to honeypot
-            # We use a special function that targets ONLY the attacker's session
             redirect_attacker_to_honeypot "$target_user" "$target_ip" "$target_pid"
-
-            # Step 3: Kill the specific attacker session (by PTY/PID)
             kill_attacker_session_only "$target_user" "$target_ip" "$target_pid"
-
             log_event "HIGH" "Intrusion response complete: user=${target_user} ip=${target_ip}"
         ) &
         track_child $!
@@ -1107,28 +1108,22 @@ Action: Blocking IP + redirecting to honeypot in 2 seconds" "CRITICAL"
     fi
 }
 
-# Redirect attacker to honeypot WITHOUT affecting owner sessions
 redirect_attacker_to_honeypot() {
     local target_user="$1" target_ip="$2" target_pid="${3:-unknown}"
 
-    # Find the PTY/terminal used by the attacker (matched by IP)
     local attacker_pts
     attacker_pts=$(who 2>/dev/null | grep "$target_ip" | awk '{print $2}' || true)
 
     if [[ -n "$attacker_pts" ]]; then
-        # Write honeypot redirect to attacker's terminal
         for pts in $attacker_pts; do
             if [[ -w "/dev/$pts" ]]; then
-                # Send the attacker into the honeypot environment
                 echo "export PATH='${HONEYPOT_DIR}/bin'; export HOME='${HONEYPOT_DIR}/home'; export PS1='\u@\h:\w\$ '; PROMPT_COMMAND='echo \"\$(date +%s) \$(history 1)\" >> /tmp/.epg_hp.log 2>/dev/null'" > "/dev/$pts" 2>/dev/null || true
             fi
         done
         log_event "HIGH" "Honeypot redirect sent to attacker PTY: ${attacker_pts}"
     fi
 
-    # Also register the jail for crash recovery
     if ! is_trusted_user "$target_user" || [[ "$target_user" == "root" ]]; then
-        # For non-owner accounts, we can safely jail the whole user
         register_jail "$target_user"
     fi
 
@@ -1140,25 +1135,20 @@ User: ${target_user} | IP: ${target_ip}
 PTY: ${attacker_pts:-unknown}" "HIGH"
 }
 
-# Kill ONLY the attacker's session, not the owner's sessions
 kill_attacker_session_only() {
     local target_user="$1" target_ip="$2" target_pid="${3:-unknown}"
 
-    # Method 1: Kill by known PID
     if [[ "$target_pid" != "unknown" && -n "$target_pid" ]]; then
         kill -9 "$target_pid" 2>/dev/null
         pkill -9 -P "$target_pid" 2>/dev/null
         log_event "HIGH" "Killed attacker PID ${target_pid}"
     fi
 
-    # Method 2: Kill by terminal (PTY) associated with the attacker IP
     local pts_list
     pts_list=$(who 2>/dev/null | grep "$target_ip" | awk '{print $2}')
     for pts in $pts_list; do
         [[ -z "$pts" ]] && continue
-        # Double-check this PTY is not ours
-        local pts_user pts_source
-        pts_user=$(who 2>/dev/null | grep "$pts" | awk '{print $1}' | head -1)
+        local pts_source
         pts_source=$(who 2>/dev/null | grep "$pts" | awk '{print $5}' | tr -d '()' | head -1)
         if ! is_my_own_ip "$pts_source"; then
             fuser -k -9 "/dev/$pts" 2>/dev/null
@@ -1166,7 +1156,6 @@ kill_attacker_session_only() {
         fi
     done
 
-    # Method 3: Kill SSH sessions from attacker IP
     local sshd_pids
     sshd_pids=$(ss -tnp 2>/dev/null | grep ":22 " | grep "$target_ip" | grep -oP 'pid=\K\d+' || true)
     for spid in $sshd_pids; do
@@ -1401,14 +1390,10 @@ Users: $(who 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' ')" "HIGH"
     [[ -f "$temp" ]] && mv "$temp" "$baseline" 2>/dev/null
 }
 
-# ========================== FIX #2: EVENT-DRIVEN FILE MONITORING ==========================
-# Use inotifywait if available, otherwise fall back to polling
-
 start_file_integrity_monitor() {
     if command -v inotifywait &>/dev/null; then
         log_event "INFO" "File integrity: using inotifywait (event-driven)"
 
-        # Build watch list of existing files
         local watch_files=()
         for f in "${SENSITIVE_FILES[@]}"; do
             [[ -f "$f" ]] && watch_files+=("$f")
@@ -1459,7 +1444,6 @@ monitor_network() {
         local interval
         interval=$(get_adaptive_interval "$SCAN_INTERVAL_MEDIUM")
 
-        # New ports
         local current_raw
         current_raw=$(ss -tlnp 2>/dev/null | tail -n +2 || true)
         local current_list
@@ -1586,7 +1570,7 @@ User: ${check_user} | Cmd: $(echo "$pcmd" | head -c 200)" "CRITICAL"
             done <<< "$procs"
         done <<< "$real_users"
 
-        # SUID check (temp paths only)
+        # SUID check (temp paths only) — with whitelist filtering
         local suid
         suid=$(find /tmp /var/tmp /dev/shm -perm -4000 -type f 2>/dev/null | sort || true)
 
@@ -1595,16 +1579,28 @@ User: ${check_user} | Cmd: $(echo "$pcmd" | head -c 200)" "CRITICAL"
             suid_diff=$(diff <(cat "${BASELINE_DIR}/suid") <(echo "$suid") 2>/dev/null | grep "^>" | sed 's/^> //' || true)
 
             if [[ -n "$suid_diff" ]]; then
-                send_smart_alert "suid_new" "$ALERT_COOLDOWN_FILE" \
-                    "NEW SUID IN TEMP
+                # Filter out whitelisted SUID binaries
+                local suspicious_suids=""
+                while IFS= read -r sf; do
+                    [[ -z "$sf" ]] && continue
+                    if ! is_whitelisted_suid "$sf"; then
+                        suspicious_suids="${suspicious_suids}${sf}"$'\n'
+                    fi
+                done <<< "$suid_diff"
 
-${suid_diff}" "CRITICAL"
+                if [[ -n "$suspicious_suids" ]]; then
+                    send_smart_alert "suid_new" "$ALERT_COOLDOWN_FILE" \
+                        "NEW SUID IN TEMP
 
-                if can_take_action; then
-                    while IFS= read -r sf; do
-                        [[ -z "$sf" ]] && continue
-                        chmod u-s "$sf" 2>/dev/null
-                    done <<< "$suid_diff"
+${suspicious_suids}" "CRITICAL"
+
+                    if can_take_action; then
+                        while IFS= read -r sf; do
+                            [[ -z "$sf" ]] && continue
+                            is_whitelisted_suid "$sf" && continue
+                            chmod u-s "$sf" 2>/dev/null
+                        done <<< "$suid_diff"
+                    fi
                 fi
             fi
         fi
@@ -1766,18 +1762,15 @@ Action: Jail + Monitor" "CRITICAL"
         echo "$hash" > "${BASELINE_DIR}/sessions_hash" 2>/dev/null
         echo "$current" > "${BASELINE_DIR}/sessions" 2>/dev/null
 
-        # RAPID POLLING: Check every 2 seconds for instant detection
         sleep "$REALTIME_LOGIN_INTERVAL"
     done
 }
 
 # ========================== MODULE: RAPID LAST-LOG WATCHER ==========================
-# Watches 'last' output for logins detected via wtmp (catches console, VNC, RDP, etc.)
 
 monitor_wtmp_logins() {
     log_event "INFO" "WTMP rapid watcher started"
 
-    # Store current last logins as baseline
     last -n 20 -i 2>/dev/null | head -20 > "${BASELINE_DIR}/last_logins" 2>/dev/null
 
     while [[ "$RUNNING" == "true" ]]; do
@@ -1788,13 +1781,11 @@ monitor_wtmp_logins() {
             local prev_last
             prev_last=$(cat "${BASELINE_DIR}/last_logins" 2>/dev/null)
 
-            # Find new entries
             local new_entries
             new_entries=$(diff <(echo "$prev_last") <(echo "$current_last") 2>/dev/null | grep "^>" | sed 's/^> //' || true)
 
             while IFS= read -r entry; do
                 [[ -z "$entry" ]] && continue
-                # Skip header/empty/reboot lines
                 echo "$entry" | grep -qiE "^(reboot|wtmp begins|$)" && continue
 
                 local l_user l_ip
@@ -1802,10 +1793,8 @@ monitor_wtmp_logins() {
                 l_ip=$(echo "$entry" | awk '{print $3}')
                 [[ -z "$l_ip" || "$l_ip" == "0.0.0.0" ]] && l_ip="local"
 
-                # Skip if it's our own session
                 is_my_own_session "$l_user" "$l_ip" && continue
 
-                # Check for threats
                 if is_trusted_user "$l_user" && ! is_my_own_ip "$l_ip"; then
                     log_event "CRITICAL" "WTMP: Untrusted login to trusted account ${l_user} from ${l_ip}"
                     local sp
@@ -1828,35 +1817,28 @@ Source: wtmp/last" "HIGH"
 }
 
 # ========================== MODULE: PAM HOOK (INSTANT DETECTION) ==========================
-# Installs a PAM script that triggers on ANY login method instantly
 
 install_pam_hook() {
     local pam_script="${INSTALL_DIR}/pam_epg_hook.sh"
     local pam_dir="/etc/pam.d"
 
-    # Create the PAM notification script
     cat > "$pam_script" << 'PAMHOOK'
 #!/bin/bash
-# EndpointGuard PAM Hook — Triggered instantly on ANY login
-# This script runs BEFORE the user gets a shell
-
+# EndpointGuard PAM Hook
 EPG_DIR="/opt/.epg"
 TRUSTED_IPS_FILE="${EPG_DIR}/trusted_ips.conf"
 ALERT_FIFO="${EPG_DIR}/pam_alerts.fifo"
 
-# Get login details from PAM environment
 LOGIN_USER="${PAM_USER:-unknown}"
 LOGIN_IP="${PAM_RHOST:-local}"
 LOGIN_TYPE="${PAM_TYPE:-unknown}"
 LOGIN_SERVICE="${PAM_SERVICE:-unknown}"
 LOGIN_TTY="${PAM_TTY:-unknown}"
 
-# Write alert to FIFO for the main daemon to process
 if [[ -p "$ALERT_FIFO" ]]; then
     echo "$(date +%s)|${LOGIN_USER}|${LOGIN_IP}|${LOGIN_TYPE}|${LOGIN_SERVICE}|${LOGIN_TTY}" > "$ALERT_FIFO" 2>/dev/null &
 fi
 
-# Quick check: if IP is not trusted, log it for rapid response
 if [[ -f "$TRUSTED_IPS_FILE" ]]; then
     if ! grep -qF "$LOGIN_IP" "$TRUSTED_IPS_FILE" 2>/dev/null; then
         echo "$(date +%s) UNTRUSTED_PAM user=${LOGIN_USER} ip=${LOGIN_IP} svc=${LOGIN_SERVICE}" >> "${EPG_DIR}/pam_events.log" 2>/dev/null
@@ -1867,25 +1849,20 @@ exit 0
 PAMHOOK
     chmod 700 "$pam_script"
 
-    # Create trusted IPs config file for PAM script
     echo "$TRUSTED_IPS 127.0.0.1 ::1 $MY_CURRENT_IPS" | tr ' ' '\n' | sort -u > "${INSTALL_DIR}/trusted_ips.conf" 2>/dev/null
 
-    # Create FIFO for PAM → daemon communication
     local fifo="${INSTALL_DIR}/pam_alerts.fifo"
     [[ ! -p "$fifo" ]] && mkfifo "$fifo" 2>/dev/null
     chmod 622 "$fifo" 2>/dev/null
 
-    # Install PAM hook for sshd (if not already installed)
     if [[ -f "${pam_dir}/sshd" ]]; then
         if ! grep -q "pam_epg_hook" "${pam_dir}/sshd" 2>/dev/null; then
-            # Backup first
             cp "${pam_dir}/sshd" "${pam_dir}/sshd.epg_backup" 2>/dev/null
             echo "session optional pam_exec.so seteuid ${pam_script}" >> "${pam_dir}/sshd" 2>/dev/null
             log_event "INFO" "PAM hook installed for sshd"
         fi
     fi
 
-    # Install PAM hook for login (console logins)
     if [[ -f "${pam_dir}/login" ]]; then
         if ! grep -q "pam_epg_hook" "${pam_dir}/login" 2>/dev/null; then
             cp "${pam_dir}/login" "${pam_dir}/login.epg_backup" 2>/dev/null
@@ -1894,7 +1871,6 @@ PAMHOOK
         fi
     fi
 
-    # Install PAM hook for su
     if [[ -f "${pam_dir}/su" ]]; then
         if ! grep -q "pam_epg_hook" "${pam_dir}/su" 2>/dev/null; then
             cp "${pam_dir}/su" "${pam_dir}/su.epg_backup" 2>/dev/null
@@ -1906,7 +1882,6 @@ PAMHOOK
     log_event "INFO" "PAM hooks installed for instant login detection"
 }
 
-# Uninstall PAM hooks (called during uninstall)
 uninstall_pam_hooks() {
     local pam_dir="/etc/pam.d"
 
@@ -1923,7 +1898,6 @@ uninstall_pam_hooks() {
     log_event "INFO" "PAM hooks removed"
 }
 
-# Monitor PAM FIFO for instant alerts from PAM hook
 monitor_pam_alerts() {
     local fifo="${INSTALL_DIR}/pam_alerts.fifo"
 
@@ -1932,25 +1906,22 @@ monitor_pam_alerts() {
     log_event "INFO" "PAM alert monitor started (instant detection)"
 
     while [[ "$RUNNING" == "true" ]]; do
-        # Read from FIFO (blocks until data arrives — this IS event-driven)
-        if read -r alert_line < "$fifo" 2>/dev/null; then
+        # Use timeout read to prevent blocking forever on Ctrl+C
+        if read -r -t 5 alert_line < "$fifo" 2>/dev/null; then
             [[ -z "$alert_line" ]] && continue
 
             IFS='|' read -r timestamp pam_user pam_ip pam_type pam_service pam_tty <<< "$alert_line"
 
             log_event "INFO" "PAM event: user=${pam_user} ip=${pam_ip} svc=${pam_service} type=${pam_type}"
 
-            # Skip owner sessions
             is_my_own_session "$pam_user" "$pam_ip" && continue
 
-            # Trusted user from untrusted IP = compromised account
             if is_trusted_user "$pam_user" && ! is_my_own_ip "$pam_ip"; then
                 log_event "CRITICAL" "PAM: Untrusted access to ${pam_user} from ${pam_ip} via ${pam_service}"
                 local sp
                 sp=$(pgrep -n -u "$pam_user" 2>/dev/null || echo "unknown")
                 handle_compromised_trusted_account "$pam_user" "$pam_ip" "$sp"
 
-            # Unknown/untrusted user login
             elif ! is_system_user "$pam_user" && ! is_trusted_user "$pam_user"; then
                 send_smart_alert "pam_${pam_user}_${pam_ip}" "$ALERT_COOLDOWN_SSH" \
                     "🔐 PAM LOGIN DETECTED (INSTANT)
@@ -1969,7 +1940,6 @@ Service: ${pam_service} | TTY: ${pam_tty}" "CRITICAL"
     done
 }
 
-# Also monitor the PAM events log for entries the FIFO might miss
 monitor_pam_events_log() {
     local pam_log="${INSTALL_DIR}/pam_events.log"
     [[ ! -f "$pam_log" ]] && touch "$pam_log" 2>/dev/null
@@ -1980,7 +1950,6 @@ monitor_pam_events_log() {
         [[ "$RUNNING" == "false" ]] && break
         [[ -z "$line" ]] && continue
 
-        # Parse: timestamp UNTRUSTED_PAM user=X ip=Y svc=Z
         local pu pi
         pu=$(echo "$line" | grep -oP 'user=\K\S+' 2>/dev/null)
         pi=$(echo "$line" | grep -oP 'ip=\K\S+' 2>/dev/null)
@@ -2005,7 +1974,7 @@ monitor_su_sudo() {
 
     log_event "INFO" "SU/Sudo monitor started"
 
-    _process() {
+    _process_su_sudo() {
         local line="$1"
         [[ -z "$line" ]] && return
 
@@ -2057,23 +2026,23 @@ monitor_su_sudo() {
     if [[ "$auth_source" == "journalctl" ]]; then
         journalctl -f --no-pager -n 0 2>/dev/null | while IFS= read -r line; do
             [[ "$RUNNING" == "false" ]] && break
-            _process "$line"
+            _process_su_sudo "$line"
         done &
     else
         local logfile="${auth_source#file:}"
         tail -n 0 -F "$logfile" 2>/dev/null | while IFS= read -r line; do
             [[ "$RUNNING" == "false" ]] && break
-            _process "$line"
+            _process_su_sudo "$line"
         done &
     fi
 
     track_child $!
 }
 
-# ========================== MODULE: KERNEL MONITOR (FIXED — WITH WHITELIST) ==========================
+# ========================== MODULE: KERNEL MONITOR (WITH WHITELIST) ==========================
 
 monitor_kernel_modules() {
-    log_event "INFO" "Kernel monitor started (with module whitelist)"
+    log_event "INFO" "Kernel monitor started (with whitelist)"
     lsmod 2>/dev/null | sort > "${BASELINE_DIR}/kmods" 2>/dev/null
 
     while [[ "$RUNNING" == "true" ]]; do
@@ -2088,40 +2057,33 @@ monitor_kernel_modules() {
             new_mods=$(diff <(cat "${BASELINE_DIR}/kmods") <(echo "$current") 2>/dev/null | grep "^>" | sed 's/^> //' || true)
 
             if [[ -n "$new_mods" ]]; then
-                # Filter out whitelisted kernel modules — only alert on truly unknown ones
+                # Filter out whitelisted kernel modules
                 local suspicious_mods=""
-                local suspicious_count=0
-
                 while IFS= read -r mod_line; do
                     [[ -z "$mod_line" ]] && continue
 
-                    # Extract module name (first field from lsmod output)
                     local mod_name
                     mod_name=$(echo "$mod_line" | awk '{print $1}')
                     [[ -z "$mod_name" ]] && continue
 
-                    # Skip header line from lsmod
-                    [[ "$mod_name" == "Module" ]] && continue
-
-                    # Check against whitelist
-                    if ! is_whitelisted_kmod "$mod_name"; then
-                        suspicious_mods+="${mod_line}"$'\n'
-                        suspicious_count=$((suspicious_count + 1))
-                        log_event "HIGH" "Unknown kernel module loaded: ${mod_name}"
+                    if ! is_whitelisted_kernel_module "$mod_name"; then
+                        suspicious_mods="${suspicious_mods}${mod_line}"$'\n'
+                        log_event "HIGH" "Suspicious kernel module loaded: ${mod_name}"
+                    else
+                        log_event "INFO" "Whitelisted kernel module loaded: ${mod_name}"
                     fi
                 done <<< "$new_mods"
 
-                # Only send alert if there are genuinely suspicious (non-whitelisted) modules
-                if [[ "$suspicious_count" -gt 0 ]] && [[ -n "$suspicious_mods" ]]; then
+                # Only alert on truly suspicious modules
+                if [[ -n "$suspicious_mods" ]]; then
                     send_smart_alert "kmod" "$ALERT_COOLDOWN_OTHER" \
-                        "⚠️ Unknown Kernel Modules Loaded (${suspicious_count}):
+                        "⚠️ Suspicious Kernel Modules Loaded:
 
 ${suspicious_mods}" "HIGH"
                 fi
             fi
         fi
 
-        # Always update baseline to current state
         echo "$current" > "${BASELINE_DIR}/kmods" 2>/dev/null
         sleep "$interval"
     done
@@ -2245,7 +2207,7 @@ apply_ssh_hardening() {
 
     cat > /etc/ssh/banner << 'BANNER'
 ================================================================
-  AUTHORIZED ACCESS ONLY — All connections monitored.
+       AUTHORIZED ACCESS ONLY — All connections monitored.
 ================================================================
 BANNER
     _set "Banner" "/etc/ssh/banner"
@@ -2281,10 +2243,8 @@ generate_daily_report() {
 Mode: ${SAFETY_MODE} | Events: ${total}
 Critical: ${crit} | High: ${high} | Blocked: ${blocked}" "LOW"
 
-            # Cleanup old alert tracker files
             find "$ALERT_TRACKER" -type f -mtime +7 -delete 2>/dev/null
 
-            # Rotate logs if needed
             local sz
             sz=$(stat -c%s "$LOG_FILE" 2>/dev/null || echo 0)
             if [[ "$sz" -gt 52428800 ]]; then
@@ -2311,43 +2271,52 @@ start_daemon() {
         fi
     fi
 
-    echo -e "${GREEN}"
-    echo '╔═══════════════════════════════════════════════════════╗'
-    echo '║  EndpointGuard v4.0 — Instant Intrusion Response Engine  ║'
-    echo '╚═══════════════════════════════════════════════════════╝'
-    echo -e "${NC}"
-
     [[ "$(id -u)" -ne 0 ]] && echo -e "${RED}Must run as root${NC}" && exit 1
 
-    echo -e "  Mode: ${BOLD}${SAFETY_MODE^^}${NC}"
+    show_banner
+
+    echo -e "  ${WHITE}${BOLD}⚙  CONFIGURATION${NC}"
+    echo -e "  ${WHITE}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
     case "$SAFETY_MODE" in
-        monitor)  echo -e "  ${GREEN}→ Alert only — ZERO risk${NC}" ;;
-        moderate) echo -e "  ${YELLOW}→ Alert + block brute force${NC}" ;;
-        active)   echo -e "  ${RED}→ Full auto-response${NC}" ;;
+        monitor)  echo -e "  ${GREEN}●${NC}  Mode:    ${BOLD}${GREEN}MONITOR${NC} ${DIM}(Alert only — ZERO risk)${NC}" ;;
+        moderate) echo -e "  ${YELLOW}●${NC}  Mode:    ${BOLD}${YELLOW}MODERATE${NC} ${DIM}(Alert + block brute force)${NC}" ;;
+        active)   echo -e "  ${RED}●${NC}  Mode:    ${BOLD}${RED}ACTIVE${NC} ${DIM}(Full auto-response)${NC}" ;;
     esac
 
+    echo -e "  ${CYAN}●${NC}  User:    ${BOLD}${TRUSTED_USER}${NC}"
+
     [[ "$TELEGRAM_BOT_TOKEN" == "YOUR_BOT_TOKEN_HERE" ]] && \
-        echo -e "  ${YELLOW}⚠ Telegram not configured${NC}"
+        echo -e "  ${YELLOW}●${NC}  Telegram: ${YELLOW}Not configured${NC}" || \
+        echo -e "  ${GREEN}●${NC}  Telegram: ${GREEN}Configured${NC}"
 
-    # Check for recommended tools
-    command -v flock &>/dev/null && echo -e "  ${GREEN}✓ flock available (atomic locks)${NC}" || \
-        echo -e "  ${YELLOW}⚠ flock not found (using mkdir fallback)${NC}"
+    command -v flock &>/dev/null && \
+        echo -e "  ${GREEN}●${NC}  Locking:  ${GREEN}flock (atomic)${NC}" || \
+        echo -e "  ${YELLOW}●${NC}  Locking:  ${YELLOW}mkdir (fallback)${NC}"
 
-    command -v inotifywait &>/dev/null && echo -e "  ${GREEN}✓ inotifywait available (event-driven)${NC}" || \
-        echo -e "  ${YELLOW}⚠ inotifywait not found (using polling)${NC}"
+    command -v inotifywait &>/dev/null && \
+        echo -e "  ${GREEN}●${NC}  FileWatch: ${GREEN}inotifywait (event-driven)${NC}" || \
+        echo -e "  ${YELLOW}●${NC}  FileWatch: ${YELLOW}polling mode${NC}"
 
+    echo ""
+    echo -e "  ${WHITE}${BOLD}🔌 STARTING MODULES${NC}"
+    echo -e "  ${WHITE}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
 
     log_event "INFO" "===== EPG v4.0 Starting (mode=${SAFETY_MODE}) ====="
-    trap cleanup SIGTERM SIGINT SIGHUP EXIT
+
+    # Set up signal handling BEFORE launching anything
+    trap cleanup SIGTERM SIGINT SIGHUP
+
     init_directories
-    detect_my_ips           # Auto-detect owner IPs BEFORE any monitoring starts
+    detect_my_ips
     setup_honeypot_jail
     init_file_integrity
     apply_ssh_hardening
-    install_pam_hook        # Install PAM hooks for instant detection
+    install_pam_hook
 
-    # FIX #4: Recover any jailed users from previous crash
+    # Recover any jailed users from previous crash
     recover_jailed_users
 
     # Baselines
@@ -2372,27 +2341,61 @@ start_daemon() {
         sort | sha256sum | awk '{print $1}' > "${BASELINE_DIR}/svc_hash" 2>/dev/null
 
     # Launch modules
-    monitor_ssh_logins;              echo -e "  ${GREEN}[✓]${NC} SSH Monitor"
-    monitor_all_logins &             track_child $!; echo -e "  ${GREEN}[✓]${NC} Rapid Login Monitor (${REALTIME_LOGIN_INTERVAL}s)"
-    monitor_wtmp_logins &            track_child $!; echo -e "  ${GREEN}[✓]${NC} WTMP Rapid Watcher"
-    monitor_su_sudo;                 echo -e "  ${GREEN}[✓]${NC} SU/Sudo Monitor"
-    monitor_network &                track_child $!; echo -e "  ${GREEN}[✓]${NC} Network Monitor"
-    monitor_processes &              track_child $!; echo -e "  ${GREEN}[✓]${NC} Process Monitor"
-    monitor_persistence &            track_child $!; echo -e "  ${GREEN}[✓]${NC} Persistence Monitor"
-    monitor_kernel_modules &         track_child $!; echo -e "  ${GREEN}[✓]${NC} Kernel Monitor (with whitelist)"
-    monitor_resource_abuse &         track_child $!; echo -e "  ${GREEN}[✓]${NC} Resource Monitor"
-    anti_tampering &                 track_child $!; echo -e "  ${GREEN}[✓]${NC} Anti-Tampering"
-    generate_daily_report &          track_child $!; echo -e "  ${GREEN}[✓]${NC} Daily Report"
-    start_file_integrity_monitor;    echo -e "  ${GREEN}[✓]${NC} File Integrity ($(command -v inotifywait &>/dev/null && echo 'event-driven' || echo 'polling'))"
-    monitor_pam_alerts &             track_child $!; echo -e "  ${GREEN}[✓]${NC} PAM Instant Detection"
-    monitor_pam_events_log;          echo -e "  ${GREEN}[✓]${NC} PAM Events Log"
+    monitor_ssh_logins
+    echo -e "  ${GREEN}  [✓]${NC} SSH Monitor"
+
+    monitor_all_logins &             track_child $!
+    echo -e "  ${GREEN}  [✓]${NC} Rapid Login Monitor (${REALTIME_LOGIN_INTERVAL}s)"
+
+    monitor_wtmp_logins &            track_child $!
+    echo -e "  ${GREEN}  [✓]${NC} WTMP Rapid Watcher"
+
+    monitor_su_sudo
+    echo -e "  ${GREEN}  [✓]${NC} SU/Sudo Monitor"
+
+    monitor_network &                track_child $!
+    echo -e "  ${GREEN}  [✓]${NC} Network Monitor"
+
+    monitor_processes &              track_child $!
+    echo -e "  ${GREEN}  [✓]${NC} Process Monitor"
+
+    monitor_persistence &            track_child $!
+    echo -e "  ${GREEN}  [✓]${NC} Persistence Monitor"
+
+    monitor_kernel_modules &         track_child $!
+    echo -e "  ${GREEN}  [✓]${NC} Kernel Monitor ${DIM}(with whitelist)${NC}"
+
+    monitor_resource_abuse &         track_child $!
+    echo -e "  ${GREEN}  [✓]${NC} Resource Monitor"
+
+    anti_tampering &                 track_child $!
+    echo -e "  ${GREEN}  [✓]${NC} Anti-Tampering"
+
+    generate_daily_report &          track_child $!
+    echo -e "  ${GREEN}  [✓]${NC} Daily Report"
+
+    start_file_integrity_monitor
+    echo -e "  ${GREEN}  [✓]${NC} File Integrity ${DIM}($(command -v inotifywait &>/dev/null && echo 'event-driven' || echo 'polling'))${NC}"
+
+    monitor_pam_alerts &             track_child $!
+    echo -e "  ${GREEN}  [✓]${NC} PAM Instant Detection"
+
+    monitor_pam_events_log
+    echo -e "  ${GREEN}  [✓]${NC} PAM Events Log"
 
     echo $$ > "$PID_FILE"
 
     echo ""
-    echo -e "  ${GREEN}${BOLD}All 14 modules active! (2-3 sec response time)${NC}"
-    echo -e "  ${GREEN}Owner IPs: ${MY_CURRENT_IPS}${NC}"
-    echo -e "  ${GREEN}PID: $$ | Mode: ${SAFETY_MODE} | Log: ${LOG_FILE}${NC}"
+    echo -e "  ${WHITE}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "  ${GREEN}${BOLD}  ✅ All 14 modules active! (2-3 sec response time)${NC}"
+    echo -e "  ${WHITE}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "  ${DIM}Owner IPs:${NC}  ${CYAN}${MY_CURRENT_IPS}${NC}"
+    echo -e "  ${DIM}PID:${NC}        ${WHITE}$$${NC}"
+    echo -e "  ${DIM}Mode:${NC}       ${BOLD}${SAFETY_MODE^^}${NC}"
+    echo -e "  ${DIM}Log:${NC}        ${CYAN}${LOG_FILE}${NC}"
+    echo ""
+    echo -e "  ${DIM}Press Ctrl+C to stop${NC}"
     echo ""
 
     send_telegram "🛡️ EPG v4.0 STARTED
@@ -2403,10 +2406,23 @@ Owner IPs: ${MY_CURRENT_IPS}
 Lock: $(command -v flock &>/dev/null && echo 'flock' || echo 'mkdir')
 FileWatch: $(command -v inotifywait &>/dev/null && echo 'inotifywait' || echo 'poll')
 PAM Hooks: Active
-Kernel Whitelist: ${#WHITELISTED_KMODS[@]} modules
 Trusted: ${TRUSTED_USER}" "LOW"
 
-    wait
+    # Wait for children — use a loop so signals can interrupt
+    while [[ "$RUNNING" == "true" ]]; do
+        # Wait with timeout so Ctrl+C works
+        wait -n 2>/dev/null || true
+        # Check if we still have living children
+        local alive=0
+        for cpid in "${CHILD_PIDS[@]}"; do
+            kill -0 "$cpid" 2>/dev/null && alive=$((alive + 1))
+        done
+        if [[ "$alive" -eq 0 ]]; then
+            log_event "WARN" "All child processes died, restarting in 5s..."
+            sleep 5
+            break
+        fi
+    done
 }
 
 stop_daemon() {
@@ -2444,14 +2460,15 @@ stop_daemon() {
 }
 
 show_status() {
-    echo -e "\n${CYAN}╔══════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║   EndpointGuard v4.0 Status          ║${NC}"
-    echo -e "${CYAN}╚══════════════════════════════════════╝${NC}\n"
+    echo ""
+    echo -e "  ${CYAN}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "  ${CYAN}${BOLD}  EndpointGuard v4.0 — Status${NC}"
+    echo -e "  ${CYAN}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
 
     echo -e "  Mode:    ${BOLD}${SAFETY_MODE^^}${NC}"
     echo -e "  Lock:    $(command -v flock &>/dev/null && echo "${GREEN}flock${NC}" || echo "${YELLOW}mkdir${NC}")"
     echo -e "  inotify: $(command -v inotifywait &>/dev/null && echo "${GREEN}yes${NC}" || echo "${YELLOW}no (polling)${NC}")"
-    echo -e "  KMod WL: ${GREEN}${#WHITELISTED_KMODS[@]} modules whitelisted${NC}"
 
     if [[ -f "$PID_FILE" ]]; then
         local p
@@ -2608,7 +2625,6 @@ uninstall_tool() {
 
     rm -f /tmp/.epg_hp.log /etc/ssh/banner 2>/dev/null
 
-    # Clean up PAM hooks
     uninstall_pam_hooks
 
     rm -rf "$INSTALL_DIR" 2>/dev/null
@@ -2617,26 +2633,27 @@ uninstall_tool() {
 }
 
 print_help() {
-    echo -e "${CYAN}"
-    echo '╔═══════════════════════════════════════════════════════╗'
-    echo '║  EndpointGuard v4.0 — Instant Intrusion Response     ║'
-    echo '╚═══════════════════════════════════════════════════════╝'
-    echo -e "${NC}"
-    echo -e " ${CYAN}Usage:${NC} $0 <command>"
+    show_banner
+    echo -e "  ${WHITE}${BOLD}USAGE${NC}"
+    echo -e "  ${WHITE}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
-    echo -e " ${GREEN}start${NC}       Start daemon"
-    echo -e " ${GREEN}stop${NC}        Stop daemon"
-    echo -e " ${GREEN}restart${NC}     Restart"
-    echo -e " ${GREEN}status${NC}      Show status"
-    echo -e " ${GREEN}test${NC}        Test Telegram"
-    echo -e " ${GREEN}logs${NC}        [filter] View logs (critical/high/logins/blocked/all)"
-    echo -e " ${GREEN}block${NC}       <IP> Block IP"
-    echo -e " ${GREEN}unblock${NC}     <IP> Unblock IP"
-    echo -e " ${GREEN}install${NC}     Systemd service"
-    echo -e " ${GREEN}uninstall${NC}   Remove completely"
+    echo -e "    ${CYAN}$0${NC} ${WHITE}<command>${NC}"
     echo ""
-    echo -e " Mode: ${BOLD}${SAFETY_MODE^^}${NC} (edit SAFETY_MODE in script)"
-    echo -e " Kernel Module Whitelist: ${#WHITELISTED_KMODS[@]} modules"
+    echo -e "  ${WHITE}${BOLD}COMMANDS${NC}"
+    echo -e "  ${WHITE}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "    ${GREEN}start${NC}         Start the daemon"
+    echo -e "    ${GREEN}stop${NC}          Stop the daemon"
+    echo -e "    ${GREEN}restart${NC}       Restart the daemon"
+    echo -e "    ${GREEN}status${NC}        Show current status"
+    echo -e "    ${GREEN}test${NC}          Test Telegram connection"
+    echo -e "    ${GREEN}logs${NC} ${DIM}[filter]${NC}  View logs ${DIM}(critical/high/logins/blocked/all)${NC}"
+    echo -e "    ${GREEN}block${NC} ${DIM}<IP>${NC}    Block an IP address"
+    echo -e "    ${GREEN}unblock${NC} ${DIM}<IP>${NC}  Unblock an IP address"
+    echo -e "    ${GREEN}install${NC}       Install as systemd service"
+    echo -e "    ${GREEN}uninstall${NC}     Remove completely"
+    echo ""
+    echo -e "  ${DIM}Current mode: ${NC}${BOLD}${SAFETY_MODE^^}${NC} ${DIM}(edit SAFETY_MODE in script)${NC}"
     echo ""
 }
 
