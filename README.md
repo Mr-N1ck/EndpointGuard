@@ -72,29 +72,28 @@ Most endpoint security tools are **bloated**, require **complex dependencies**, 
 ## 🎯 Features
 
 <div align="center">
-
 ┌─────────────────────────────────────────────────────────────────┐
-│ ENDPOINTGUARD v4.0 FEATURES │
+│                    ENDPOINTGUARD v4.0 FEATURES                  │
 ├─────────────────────────────────────────────────────────────────┤
-│ │
-│ 🔐 DETECTION │ ⚡ RESPONSE │
-│ ───────────────── │ ────────────────── │
-│ • SSH brute force │ • Instant IP blocking │
-│ • Reverse shells │ • Session-specific termination │
-│ • Privilege escalation │ • Honeypot jail deployment │
-│ • File tampering │ • Account lockdown │
-│ • Rootkit indicators │ • Firewall auto-recovery │
-│ • Crypto miners │ • PAM-level interception │
-│ • Persistence mechanisms │ • Process group kill │
-│ │ │
-│ 🛡️ SAFETY │ 📡 ALERTING │
-│ ───────────────── │ ────────────────── │
-│ • 3 safety modes │ • Real-time Telegram alerts │
-│ • Owner IP auto-detect │ • Smart cooldown (no spam) │
-│ • Self-lockout prevention │ • Daily summary reports │
-│ • Trusted user protection │ • Severity-based urgency │
-│ • Crash-safe recovery │ • Multi-format log parsing │
-│ │ │
+│                                                                 │
+│  🔐 DETECTION              │  ⚡ RESPONSE                      │
+│  ─────────────────          │  ──────────────────                │
+│  • SSH brute force          │  • Instant IP blocking             │
+│  • Reverse shells           │  • Session-specific termination    │
+│  • Privilege escalation     │  • Honeypot jail deployment        │
+│  • File tampering           │  • Account lockdown                │
+│  • Rootkit indicators       │  • Firewall auto-recovery          │
+│  • Crypto miners            │  • PAM-level interception          │
+│  • Persistence mechanisms   │  • Process group kill              │
+│                             │                                    │
+│  🛡️ SAFETY                 │  📡 ALERTING                      │
+│  ─────────────────          │  ──────────────────                │
+│  • 3 safety modes           │  • Real-time Telegram alerts       │
+│  • Owner IP auto-detect     │  • Smart cooldown (no spam)        │
+│  • Self-lockout prevention  │  • Daily summary reports           │
+│  • Trusted user protection  │  • Severity-based urgency          │
+│  • Crash-safe recovery      │  • Multi-format log parsing        │
+│                             │                                    │
 └─────────────────────────────────────────────────────────────────┘
 
 text
