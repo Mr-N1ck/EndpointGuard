@@ -46,19 +46,21 @@
 #    https://github.com/Mr-N1ck/EndpointGuard/tree/main/docs
 #
 ###############################################################################
-
 # SAFETY MODES:
 #   "monitor"  → Alert only, NEVER takes action (DEFAULT)
 #   "moderate" → Alert + auto-block brute force IPs
 #   "active"   → Full auto-response
+#
 ###############################################################################
 
 set -o pipefail
 
 # ========================== SAFETY MODE ==========================
+
 SAFETY_MODE="SET THIS ACC TO YOUR USUAGE"
 
 # ========================== CONFIGURATION ==========================
+
 TELEGRAM_BOT_TOKEN="YOUR_BOT_TOKEN"
 TELEGRAM_CHAT_ID="YOUR_CHAT_ID"
 
@@ -137,29 +139,146 @@ WHITELISTED_PROGRAMS=(
     reboot shutdown poweroff halt init
 )
 
+# --- Whitelisted Kernel Modules (NEVER alerted) ---
+# These are normal system modules that load/unload during regular operation
+WHITELISTED_KMODS=(
+    # GPU / Display drivers
+    i915 xe drm drm_kms_helper drm_exec drm_gpuvm drm_suballoc_helper
+    drm_display_helper drm_buddy drm_ttm_helper drm_client_lib ttm gpu_sched
+    nvidia nvidia_modeset nvidia_uvm nvidia_drm
+    amdgpu radeon nouveau
+    i2c_hid i2c_hid_acpi i2c_algo_bit
+    video backlight
+
+    # Audio / Sound
+    snd snd_hda_intel snd_hda_codec snd_hda_codec_generic snd_hda_codec_realtek
+    snd_hda_codec_realtek_lib snd_hda_codec_alc269 snd_hda_codec_hdmi
+    snd_hda_core snd_hwdep snd_pcm snd_pcm_dmaengine snd_timer
+    snd_seq snd_seq_device snd_seq_midi snd_seq_midi_event snd_rawmidi
+    snd_soc_core snd_soc_avs snd_soc_sdca snd_compress
+    snd_sof snd_sof_utils snd_sof_intel_hda_common snd_sof_intel_hda_generic
+    snd_sof_intel_hda snd_sof_pci snd_sof_pci_intel_tgl
+    snd_sof_pci_intel_mtl snd_sof_pci_intel_lnl
+    soundwire_intel soundwire_generic_allocation soundwire_cadence
+    soundwire_bus soundwire_intel_init
+    snd_soc_hda_codec snd_soc_hdac_hda snd_soc_acpi snd_soc_acpi_intel_match
+
+    # Crypto / Encryption
+    aesni_intel aes_x86_64 crypto_simd cryptd ghash_clmulni_intel
+    polyval_clmulni polyval_generic ccm gcm cbc cmac
+    algif_hash algif_skcipher af_alg
+    pkcs8_key_parser pkcs7_message x509_cert_parser
+
+    # Input / HID / USB
+    evdev hid hid_generic hid_multitouch hid_asus hid_logitech
+    hid_logitech_dj hid_logitech_hidpp hid_apple hid_cherry
+    hid_microsoft hid_lenovo hid_magicmouse
+    usbhid usbcore usb_common xhci_hcd xhci_pci ehci_hcd ehci_pci
+    ohci_hcd ohci_pci uhci_hcd usb_storage uas
+    btusb btrtl btintel btbcm btmtk bluetooth bnep rfcomm
+
+    # Networking / WiFi / Firewall
+    iwlwifi iwlmvm iwl7000 iwl8000 iwlax iwl_drv
+    rtw89_core rtw89_pci rtw89_8852ae rtw89_8852be rtw89_8852ce
+    rtw88_core rtw88_pci rtw88_8822be rtw88_8822ce
+    ath11k ath11k_pci ath10k_core ath10k_pci ath9k
+    mt76_core mt7921_common mt7921e mt7921s
+    cfg80211 mac80211 rfkill lib80211
+    r8169 r8152 e1000 e1000e igb igc ixgbe i40e ice
+    realtek atlantic
+    nf_tables nfnetlink nf_conntrack nf_nat nf_defrag_ipv4 nf_defrag_ipv6
+    nft_chain_nat nft_compat nft_counter nft_ct nft_fib
+    nft_fib_inet nft_fib_ipv4 nft_fib_ipv6
+    nft_limit nft_log nft_masq nft_nat nft_objref nft_quota
+    nft_redir nft_reject nft_reject_inet nft_reject_ipv4 nft_reject_ipv6
+    ip_tables ip6_tables iptable_filter iptable_nat iptable_mangle
+    ip6table_filter ip6table_nat
+    x_tables xt_conntrack xt_nat xt_tcpudp xt_addrtype xt_comment
+    xt_multiport xt_state xt_mark xt_MASQUERADE xt_LOG xt_limit
+    xt_connmark xt_set xt_recent
+    br_netfilter bridge veth macvlan ipvlan tun tap
+    bonding team 8021q
+
+    # Filesystem / Storage
+    fuse overlay overlayfs squashfs isofs udf
+    nfs nfsd nfsv3 nfsv4 lockd sunrpc grace
+    ext4 mbcache jbd2 btrfs xfs fat vfat msdos ntfs ntfs3
+    dm_mod dm_crypt dm_thin_pool dm_cache dm_mirror dm_snapshot
+    raid0 raid1 raid456 raid10 md_mod
+    ahci libahci libata sd_mod sr_mod sg scsi_mod
+    nvme nvme_core nvme_common
+
+    # Virtualization / Containers
+    kvm kvm_intel kvm_amd
+    vboxdrv vboxnetflt vboxnetadp vboxpci
+    vmw_vmci vmw_balloon vmxnet3 vmw_pvscsi
+    virtio virtio_pci virtio_net virtio_blk virtio_scsi virtio_ring
+    vhost vhost_net vhost_scsi
+    nbd loop
+
+    # Power Management / ACPI / Thermal
+    acpi_cpufreq intel_rapl_msr intel_rapl_common intel_powerclamp
+    intel_cstate intel_uncore processor_thermal_device
+    processor_thermal_mbox processor_thermal_rfim
+    int340x_thermal_zone int3400_thermal int3403_thermal
+    intel_pch_thermal intel_soc_dts_iosf
+    acpi_pad acpi_tad acpi_thermal_rel
+    thinkpad_acpi asus_wmi asus_nb_wmi platform_profile
+    wmi wmi_bmof mxm_wmi dell_wmi dell_smbios
+    battery ac thermal thermal_sys
+
+    # Platform / System
+    binfmt_misc efi_pstore configfs
+    crc32_pclmul crc32c_intel crct10dif_pclmul
+    lpc_ich i2c_i801 i2c_smbus i2c_piix4
+    pinctrl_icelake pinctrl_tigerlake pinctrl_alderlake
+    pinctrl_meteorlake pinctrl_lunarlake
+    mei mei_me mei_hdcp mei_pxp
+    idma64 pwm_lpss pwm_lpss_platform
+    intel_lpss intel_lpss_pci
+    tpm tpm_tis tpm_tis_core tpm_crb tpm_tis_spi
+    thunderbolt typec ucsi ucsi_acpi
+    serio atkbd libps2 psmouse
+    leds_asus ledtrig_audio
+    parport parport_pc ppdev lp
+    pcspkr snd_pcsp
+
+    # Misc common
+    zstd zstd_compress zstd_decompress lz4 lz4_compress lzo lzo_rle
+    cec drm_privacy_screen
+
+    # Security
+    integrity ima evm
+    apparmor security_apparmor
+    tomoyo
+    selinux
+    landlock
+    yama
+)
+
 # --- Truly Malicious Patterns (almost never legitimate) ---
 TRULY_MALICIOUS_PATTERNS=(
     "bash -i >& /dev/tcp/"
     "bash -i >& /dev/udp/"
     "sh -i >& /dev/tcp/"
     "sh -i >& /dev/udp/"
-    "bash -c.*bash -i.*>& /dev/"
+    "bash -c.bash -i.>& /dev/"
     "rm -rf / --no-preserve-root"
-    "rm -rf /*"
+    "rm -rf /"
     "dd if=/dev/zero of=/dev/sda"
     "dd if=/dev/zero of=/dev/vda"
     "dd if=/dev/null of=/dev/sda"
     "mkfs.ext4 /dev/sda"
     "mkfs.ext4 /dev/vda"
     ":(){ :|:& };:"
-    "echo.*|.*base64 -d|.*bash"
-    "wget.*-O-|bash"
-    "wget.*-O-|sh"
-    "curl.*|bash"
-    "curl.*|sh"
-    "python.*-c.*import.*socket.*connect.*dup2.*exec"
-    "perl.*-e.*socket.*INET.*connect.*exec"
-    "ruby.*-rsocket.*-e.*TCPSocket.*exec"
+    "echo.|.base64 -d|.bash"
+    "wget.-O-|bash"
+    "wget.-O-|sh"
+    "curl.|bash"
+    "curl.|sh"
+    "python.*-c.*import.*socket.*connect.*dup2.exec"
+    "perl.-e.*socket.*INET.connect.exec"
+    "ruby.-rsocket.-e.*TCPSocket.*exec"
     "export HISTSIZE=0"
     "export HISTFILESIZE=0"
     "unset HISTFILE"
@@ -175,6 +294,7 @@ SENSITIVE_FILES=(
 )
 
 # ========================== COLORS ==========================
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -183,10 +303,11 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 # ========================== GLOBAL STATE ==========================
+
 CHILD_PIDS=()
 RUNNING=true
-MY_CURRENT_IPS=""          # Auto-populated at startup to prevent self-lockout
-KNOWN_SESSIONS_HASH=""     # For rapid login change detection
+MY_CURRENT_IPS=""       # Auto-populated at startup to prevent self-lockout
+KNOWN_SESSIONS_HASH=""  # For rapid login change detection
 
 # ========================== FIX #5: PROCESS GROUP MANAGEMENT ==========================
 # Run everything in a new process group so we can kill ALL descendants
@@ -239,8 +360,6 @@ cleanup() {
     exit 0
 }
 
-
-
 # Track a background job properly
 track_child() {
     local pid=$1
@@ -259,7 +378,6 @@ track_child() {
 }
 
 # ========================== FIX #1: ATOMIC LOCKING WITH FLOCK ==========================
-
 # Uses flock for atomic file locking — no TOCTOU race condition
 # Falls back to mkdir if flock is not available
 
@@ -309,8 +427,7 @@ init_directories() {
 }
 
 log_event() {
-    local level="$1"
-    local message="$2"
+    local level="$1" local message="$2"
     local timestamp
     timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo "unknown")
 
@@ -371,6 +488,7 @@ send_telegram() {
     [[ "$SAFETY_MODE" == "active" ]] && mode_label="ACTIVE"
 
     local full_message="${emoji} EPG [${mode_label}]
+
 Host: $(hostname 2>/dev/null)
 Time: $(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null)
 Level: ${urgency}
@@ -482,10 +600,22 @@ is_whitelisted_program() {
     return 1
 }
 
-# ========================== SELF-LOCKOUT PREVENTION ==========================
+# Check if a kernel module name is whitelisted
+is_whitelisted_kmod() {
+    local mod_name="$1"
+    [[ -z "$mod_name" ]] && return 0
 
+    for wk in "${WHITELISTED_KMODS[@]}"; do
+        [[ "$mod_name" == "$wk" ]] && return 0
+    done
+
+    return 1
+}
+
+# ========================== SELF-LOCKOUT PREVENTION ==========================
 # Auto-detect all IPs that belong to the current owner (you)
 # Called at startup to build a list of "definitely me" IPs
+
 detect_my_ips() {
     local ips=""
 
@@ -554,8 +684,8 @@ is_my_own_session() {
 }
 
 # ========================== FIX #2: RESOURCE-AWARE SCANNING ==========================
-
 # Returns current load as integer
+
 get_system_load() {
     local load
     load=$(cat /proc/loadavg 2>/dev/null | awk '{print $1}' | cut -d'.' -f1)
@@ -596,7 +726,7 @@ can_heavy_scan() {
 # ========================== MODE-GATED ACTIONS ==========================
 
 can_take_action() { [[ "$SAFETY_MODE" == "active" ]]; }
-can_block_ip()    { [[ "$SAFETY_MODE" == "active" || "$SAFETY_MODE" == "moderate" ]]; }
+can_block_ip() { [[ "$SAFETY_MODE" == "active" || "$SAFETY_MODE" == "moderate" ]]; }
 
 safe_kill_process() {
     local pid="$1" user="$2" reason="$3"
@@ -689,8 +819,8 @@ safe_lock_account() {
 
 _add_deny_user() {
     local user="$1"
-    if grep -q "^DenyUsers" /etc/ssh/sshd_config 2>/dev/null; then
-        grep -qE "DenyUsers.*\b${user}\b" /etc/ssh/sshd_config 2>/dev/null || \
+    if grep -q "DenyUsers" /etc/ssh/sshd_config 2>/dev/null; then
+        grep -qE "DenyUsers.*\b${user}\b" /etc/ssh/sshd_config 2>/dev/null ||
             sed -i "s/^DenyUsers.*/& ${user}/" /etc/ssh/sshd_config 2>/dev/null
     else
         echo "DenyUsers ${user}" >> /etc/ssh/sshd_config 2>/dev/null
@@ -722,18 +852,18 @@ EOF
 #!/bin/bash
 echo "$(date +%s) $(basename $0) $*" >> /tmp/.epg_hp.log 2>/dev/null
 case "$(basename $0)" in
-    ls)       echo "Desktop Documents Downloads" ;;
-    cat)      echo "cat: $1: Permission denied" ;;
-    id)       echo "uid=1000(user) gid=1000(user) groups=1000(user)" ;;
-    whoami)   echo "user" ;;
-    uname)    echo "Linux server 5.4.0-generic #1 SMP x86_64" ;;
+    ls) echo "Desktop  Documents  Downloads" ;;
+    cat) echo "cat: $1: Permission denied" ;;
+    id) echo "uid=1000(user) gid=1000(user) groups=1000(user)" ;;
+    whoami) echo "user" ;;
+    uname) echo "Linux server 5.4.0-generic #1 SMP x86_64" ;;
     wget|curl) sleep 1; echo "$(basename $0): network unreachable"; exit 1 ;;
-    sudo)     read -sp "[sudo] password: " x; echo; echo "not in sudoers file" ;;
-    ssh)      echo "ssh: Connection timed out" ;;
-    find)     echo "find: Permission denied" ;;
-    passwd)   echo "passwd: Authentication error" ;;
-    nc|ncat)  echo "nc: network unreachable"; exit 1 ;;
-    *)        echo "command not found" ;;
+    sudo) read -sp "[sudo] password: " x; echo; echo "not in sudoers file" ;;
+    ssh) echo "ssh: Connection timed out" ;;
+    find) echo "find: Permission denied" ;;
+    passwd) echo "passwd: Authentication error" ;;
+    nc|ncat) echo "nc: network unreachable"; exit 1 ;;
+    *) echo "command not found" ;;
 esac
 FAKESCRIPT
         chmod +x "${HONEYPOT_DIR}/bin/${cmd}" 2>/dev/null
@@ -833,6 +963,7 @@ JAILRC
 
     send_smart_alert "jail_${target_user}" "$ALERT_COOLDOWN_CMD" \
         "JAIL ACTIVATED
+
 User: ${target_user}
 IP: ${target_ip}" "HIGH"
 }
@@ -945,6 +1076,7 @@ handle_compromised_trusted_account() {
 
     send_smart_alert "compromised_${target_user}_${target_ip}" "$ALERT_COOLDOWN_SSH" \
         "🚨 SUSPICIOUS LOGIN TO TRUSTED ACCOUNT 🚨
+
 User: ${target_user}
 IP: ${target_ip}
 PID: ${target_pid}
@@ -1002,6 +1134,7 @@ redirect_attacker_to_honeypot() {
 
     send_smart_alert "honeypot_${target_user}_${target_ip}" "$ALERT_COOLDOWN_CMD" \
         "🏭 HONEYPOT ACTIVATED
+
 Attacker redirected to fake environment
 User: ${target_user} | IP: ${target_ip}
 PTY: ${attacker_pts:-unknown}" "HIGH"
@@ -1085,6 +1218,7 @@ process_auth_line() {
         if is_trusted_user "$user" && is_trusted_ip "$ip"; then
             send_smart_alert "login_ok" "$ALERT_COOLDOWN_SSH" \
                 "Trusted Login ✅
+
 User: ${user} | IP: ${ip}" "LOW"
 
         elif is_trusted_user "$user"; then
@@ -1094,6 +1228,7 @@ User: ${user} | IP: ${ip}" "LOW"
         else
             send_smart_alert "login_bad_${user}" "$ALERT_COOLDOWN_SSH" \
                 "UNTRUSTED LOGIN
+
 User: ${user} | IP: ${ip}
 Mode: ${SAFETY_MODE}" "CRITICAL"
 
@@ -1126,6 +1261,7 @@ Mode: ${SAFETY_MODE}" "CRITICAL"
         if [[ "$fail_count" -ge "$MAX_FAILED_LOGINS" ]]; then
             send_smart_alert "brute_${ip}" 600 \
                 "BRUTE FORCE
+
 IP: ${ip} | User: ${user} | Attempts: ${fail_count}" "CRITICAL"
             safe_block_ip "$ip" "brute_force"
         elif [[ $((fail_count % 5)) -eq 0 ]] && [[ "$fail_count" -gt 0 ]]; then
@@ -1186,6 +1322,7 @@ monitor_untrusted_session() {
 
                     send_smart_alert "mal_${user}_${suspicious_count}" "$ALERT_COOLDOWN_CMD" \
                         "MALICIOUS COMMAND
+
 User: ${user} | IP: ${ip}
 Cmd: $(echo "$proc_cmd" | head -c 200)
 Strike: ${suspicious_count}/${SUSPICIOUS_CMD_THRESHOLD}" "CRITICAL"
@@ -1248,6 +1385,7 @@ _check_integrity_internal() {
 
                 send_smart_alert "integrity_${file//\//_}" "$ALERT_COOLDOWN_FILE" \
                     "FILE MODIFIED
+
 ${file}
 Users: $(who 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' ')" "HIGH"
 
@@ -1264,8 +1402,8 @@ Users: $(who 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' ')" "HIGH"
 }
 
 # ========================== FIX #2: EVENT-DRIVEN FILE MONITORING ==========================
-
 # Use inotifywait if available, otherwise fall back to polling
+
 start_file_integrity_monitor() {
     if command -v inotifywait &>/dev/null; then
         log_event "INFO" "File integrity: using inotifywait (event-driven)"
@@ -1287,6 +1425,7 @@ start_file_integrity_monitor() {
 
                 send_smart_alert "inotify_${changed_file//\//_}" "$ALERT_COOLDOWN_FILE" \
                     "FILE CHANGED (real-time)
+
 ${event_line}
 Users: $(who 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' ')" "HIGH"
             done &
@@ -1349,6 +1488,7 @@ monitor_network() {
 
                 send_smart_alert "port_${new_port}" "$ALERT_COOLDOWN_NET" \
                     "NEW PORT
+
 Port: ${new_port} | User: ${port_user}
 Cmd: $(echo "$port_cmd" | head -c 150)" "HIGH"
 
@@ -1386,6 +1526,7 @@ Cmd: $(echo "$port_cmd" | head -c 150)" "HIGH"
                 remote_ip=$(echo "$conn" | awk '{print $5}' | rev | cut -d: -f2- | rev)
 
                 send_telegram "REVERSE SHELL
+
 User: ${cuser} | Remote: ${remote_ip}
 Cmd: $(echo "$ccmd" | head -c 200)" "CRITICAL"
 
@@ -1437,6 +1578,7 @@ monitor_processes() {
 
                         send_smart_alert "proc_${check_user}_${ppid}" "$ALERT_COOLDOWN_CMD" \
                             "MALICIOUS PROCESS
+
 User: ${check_user} | Cmd: $(echo "$pcmd" | head -c 200)" "CRITICAL"
                         break
                     fi
@@ -1455,6 +1597,7 @@ User: ${check_user} | Cmd: $(echo "$pcmd" | head -c 200)" "CRITICAL"
             if [[ -n "$suid_diff" ]]; then
                 send_smart_alert "suid_new" "$ALERT_COOLDOWN_FILE" \
                     "NEW SUID IN TEMP
+
 ${suid_diff}" "CRITICAL"
 
                 if can_take_action; then
@@ -1577,6 +1720,7 @@ monitor_all_logins() {
                     log_event "INFO" "Owner session confirmed: ${s_user} from ${s_source}"
                     send_smart_alert "login_owner_${s_source}" "$ALERT_COOLDOWN_SSH" \
                         "✅ Owner Login Detected
+
 User: ${s_user} | Source: ${s_source}
 TTY: ${s_tty}" "LOW"
                     continue
@@ -1592,6 +1736,7 @@ TTY: ${s_tty}" "LOW"
                 elif ! is_system_user "$s_user"; then
                     send_smart_alert "login_${s_user}" "$ALERT_COOLDOWN_SSH" \
                         "🚨 UNTRUSTED USER LOGIN
+
 User: ${s_user} | Source: ${s_source}
 TTY: ${s_tty}
 Action: Jail + Monitor" "CRITICAL"
@@ -1670,6 +1815,7 @@ monitor_wtmp_logins() {
                     log_event "HIGH" "WTMP: Unknown user login ${l_user} from ${l_ip}"
                     send_smart_alert "wtmp_${l_user}" "$ALERT_COOLDOWN_SSH" \
                         "🔍 WTMP Login Detected
+
 User: ${l_user} | IP: ${l_ip}
 Source: wtmp/last" "HIGH"
                 fi
@@ -1808,6 +1954,7 @@ monitor_pam_alerts() {
             elif ! is_system_user "$pam_user" && ! is_trusted_user "$pam_user"; then
                 send_smart_alert "pam_${pam_user}_${pam_ip}" "$ALERT_COOLDOWN_SSH" \
                     "🔐 PAM LOGIN DETECTED (INSTANT)
+
 User: ${pam_user} | IP: ${pam_ip}
 Service: ${pam_service} | TTY: ${pam_tty}" "CRITICAL"
 
@@ -1849,7 +1996,6 @@ monitor_pam_events_log() {
     done &
     track_child $!
 }
-
 
 # ========================== MODULE: SU/SUDO MONITOR ==========================
 
@@ -1924,10 +2070,10 @@ monitor_su_sudo() {
     track_child $!
 }
 
-# ========================== MODULE: KERNEL MONITOR ==========================
+# ========================== MODULE: KERNEL MONITOR (FIXED — WITH WHITELIST) ==========================
 
 monitor_kernel_modules() {
-    log_event "INFO" "Kernel monitor started"
+    log_event "INFO" "Kernel monitor started (with module whitelist)"
     lsmod 2>/dev/null | sort > "${BASELINE_DIR}/kmods" 2>/dev/null
 
     while [[ "$RUNNING" == "true" ]]; do
@@ -1941,10 +2087,41 @@ monitor_kernel_modules() {
             local new_mods
             new_mods=$(diff <(cat "${BASELINE_DIR}/kmods") <(echo "$current") 2>/dev/null | grep "^>" | sed 's/^> //' || true)
 
-            [[ -n "$new_mods" ]] && send_smart_alert "kmod" "$ALERT_COOLDOWN_OTHER" \
-                "New Kernel Modules: ${new_mods}" "HIGH"
+            if [[ -n "$new_mods" ]]; then
+                # Filter out whitelisted kernel modules — only alert on truly unknown ones
+                local suspicious_mods=""
+                local suspicious_count=0
+
+                while IFS= read -r mod_line; do
+                    [[ -z "$mod_line" ]] && continue
+
+                    # Extract module name (first field from lsmod output)
+                    local mod_name
+                    mod_name=$(echo "$mod_line" | awk '{print $1}')
+                    [[ -z "$mod_name" ]] && continue
+
+                    # Skip header line from lsmod
+                    [[ "$mod_name" == "Module" ]] && continue
+
+                    # Check against whitelist
+                    if ! is_whitelisted_kmod "$mod_name"; then
+                        suspicious_mods+="${mod_line}"$'\n'
+                        suspicious_count=$((suspicious_count + 1))
+                        log_event "HIGH" "Unknown kernel module loaded: ${mod_name}"
+                    fi
+                done <<< "$new_mods"
+
+                # Only send alert if there are genuinely suspicious (non-whitelisted) modules
+                if [[ "$suspicious_count" -gt 0 ]] && [[ -n "$suspicious_mods" ]]; then
+                    send_smart_alert "kmod" "$ALERT_COOLDOWN_OTHER" \
+                        "⚠️ Unknown Kernel Modules Loaded (${suspicious_count}):
+
+${suspicious_mods}" "HIGH"
+                fi
+            fi
         fi
 
+        # Always update baseline to current state
         echo "$current" > "${BASELINE_DIR}/kmods" 2>/dev/null
         sleep "$interval"
     done
@@ -2100,6 +2277,7 @@ generate_daily_report() {
             [[ -f "$BLOCKED_FILE" ]] && blocked=$(wc -l < "$BLOCKED_FILE" 2>/dev/null || echo 0)
 
             send_telegram "DAILY REPORT 📊
+
 Mode: ${SAFETY_MODE} | Events: ${total}
 Critical: ${crit} | High: ${high} | Blocked: ${blocked}" "LOW"
 
@@ -2201,7 +2379,7 @@ start_daemon() {
     monitor_network &                track_child $!; echo -e "  ${GREEN}[✓]${NC} Network Monitor"
     monitor_processes &              track_child $!; echo -e "  ${GREEN}[✓]${NC} Process Monitor"
     monitor_persistence &            track_child $!; echo -e "  ${GREEN}[✓]${NC} Persistence Monitor"
-    monitor_kernel_modules &         track_child $!; echo -e "  ${GREEN}[✓]${NC} Kernel Monitor"
+    monitor_kernel_modules &         track_child $!; echo -e "  ${GREEN}[✓]${NC} Kernel Monitor (with whitelist)"
     monitor_resource_abuse &         track_child $!; echo -e "  ${GREEN}[✓]${NC} Resource Monitor"
     anti_tampering &                 track_child $!; echo -e "  ${GREEN}[✓]${NC} Anti-Tampering"
     generate_daily_report &          track_child $!; echo -e "  ${GREEN}[✓]${NC} Daily Report"
@@ -2218,12 +2396,14 @@ start_daemon() {
     echo ""
 
     send_telegram "🛡️ EPG v4.0 STARTED
+
 Mode: ${SAFETY_MODE^^} | Modules: 14
 Response Time: ${REALTIME_LOGIN_INTERVAL}s
 Owner IPs: ${MY_CURRENT_IPS}
 Lock: $(command -v flock &>/dev/null && echo 'flock' || echo 'mkdir')
 FileWatch: $(command -v inotifywait &>/dev/null && echo 'inotifywait' || echo 'poll')
 PAM Hooks: Active
+Kernel Whitelist: ${#WHITELISTED_KMODS[@]} modules
 Trusted: ${TRUSTED_USER}" "LOW"
 
     wait
@@ -2265,12 +2445,13 @@ stop_daemon() {
 
 show_status() {
     echo -e "\n${CYAN}╔══════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║    EndpointGuard v4.0 Status         ║${NC}"
+    echo -e "${CYAN}║   EndpointGuard v4.0 Status          ║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════╝${NC}\n"
 
     echo -e "  Mode:    ${BOLD}${SAFETY_MODE^^}${NC}"
     echo -e "  Lock:    $(command -v flock &>/dev/null && echo "${GREEN}flock${NC}" || echo "${YELLOW}mkdir${NC}")"
     echo -e "  inotify: $(command -v inotifywait &>/dev/null && echo "${GREEN}yes${NC}" || echo "${YELLOW}no (polling)${NC}")"
+    echo -e "  KMod WL: ${GREEN}${#WHITELISTED_KMODS[@]} modules whitelisted${NC}"
 
     if [[ -f "$PID_FILE" ]]; then
         local p
@@ -2438,23 +2619,24 @@ uninstall_tool() {
 print_help() {
     echo -e "${CYAN}"
     echo '╔═══════════════════════════════════════════════════════╗'
-    echo '║  EndpointGuard v4.0 — Instant Intrusion Response    ║'
+    echo '║  EndpointGuard v4.0 — Instant Intrusion Response     ║'
     echo '╚═══════════════════════════════════════════════════════╝'
     echo -e "${NC}"
-    echo -e "  ${CYAN}Usage:${NC} $0 <command>"
+    echo -e " ${CYAN}Usage:${NC} $0 <command>"
     echo ""
-    echo -e "  ${GREEN}start${NC}           Start daemon"
-    echo -e "  ${GREEN}stop${NC}            Stop daemon"
-    echo -e "  ${GREEN}restart${NC}         Restart"
-    echo -e "  ${GREEN}status${NC}          Show status"
-    echo -e "  ${GREEN}test${NC}            Test Telegram"
-    echo -e "  ${GREEN}logs${NC} [filter]   View logs (critical/high/logins/blocked/all)"
-    echo -e "  ${GREEN}block${NC} <IP>      Block IP"
-    echo -e "  ${GREEN}unblock${NC} <IP>    Unblock IP"
-    echo -e "  ${GREEN}install${NC}         Systemd service"
-    echo -e "  ${GREEN}uninstall${NC}       Remove completely"
+    echo -e " ${GREEN}start${NC}       Start daemon"
+    echo -e " ${GREEN}stop${NC}        Stop daemon"
+    echo -e " ${GREEN}restart${NC}     Restart"
+    echo -e " ${GREEN}status${NC}      Show status"
+    echo -e " ${GREEN}test${NC}        Test Telegram"
+    echo -e " ${GREEN}logs${NC}        [filter] View logs (critical/high/logins/blocked/all)"
+    echo -e " ${GREEN}block${NC}       <IP> Block IP"
+    echo -e " ${GREEN}unblock${NC}     <IP> Unblock IP"
+    echo -e " ${GREEN}install${NC}     Systemd service"
+    echo -e " ${GREEN}uninstall${NC}   Remove completely"
     echo ""
-    echo -e "  Mode: ${BOLD}${SAFETY_MODE^^}${NC} (edit SAFETY_MODE in script)"
+    echo -e " Mode: ${BOLD}${SAFETY_MODE^^}${NC} (edit SAFETY_MODE in script)"
+    echo -e " Kernel Module Whitelist: ${#WHITELISTED_KMODS[@]} modules"
     echo ""
 }
 
