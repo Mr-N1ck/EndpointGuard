@@ -1,0 +1,22 @@
+# EndpointGuard - Local State & Log Files
+.epg/
+/opt/.epg/
+*.log
+*.db
+*.list
+*.conf
+*.bak
+*.tmp
+.epg_pre_clean.*
+*.lock
+*.lock.d/
+pam_alerts.fifo
+
+# Local Test Scripts (unless explicitly committed)
+.epg_test_*.sh
+
+# IDE Configs & System Files
+.vscode/
+.idea/
+.DS_Store
+thumbs.db
