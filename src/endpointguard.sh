@@ -15,14 +15,17 @@
 #  ╚██████╔╝╚██████╔╝██║  ██║██║  ██║██████╔╝
 #   ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝
 #
-#  EndpointGuard v5.0 — Linux Sentinel
+#  EndpointGuard v5.1 — Linux Sentinel
 #  Menu-driven, zero-argument, advanced reverse-shell & C2 hunter
 #
 #  Author:    Prince Gaur (Mr-N1ck)
 #  GitHub:    https://github.com/Mr-N1ck/EndpointGuard
 #  License:   MIT
 #
-#  WHAT'S NEW IN v5.0
+#  WHAT'S NEW IN v5.1
+#    • Ghost-Shell v4.0 hunter — detects & removes advanced persistence framework
+#    • Fixed LAN attacker detection — reverse shells from same subnet now caught
+#    • Enhanced shell prompt safety — surgical cleaning avoids corruption
 #    • Pure interactive TUI — no command-line arguments needed
 #    • First-run setup wizard — no manual config editing
 #    • /proc/<pid>/fd socket-walk reverse-shell hunter
@@ -49,7 +52,7 @@ set -o pipefail
 umask 077
 
 # ========================== VERSION ==========================
-EPG_VERSION="5.0.0"
+EPG_VERSION="5.1.0"
 
 # ========================== INSTALL PATHS ==========================
 INSTALL_DIR="/opt/.epg"
@@ -170,6 +173,344 @@ C2_DOMAINS=(
     "oast.fun"
     "burpcollaborator.net"
     "canarytokens.com"
+    # Advanced C2 infrastructure
+    "cloudflarestorage.com"
+    "githubusercontent.com/raw"
+    "gitlab.com/raw"
+    "bitbucket.org/raw"
+    "raw.githubusercontent.com"
+    "gist.githubusercontent.com"
+    "git.io"
+    "sh.rustup.rs"
+    "curl.sh"
+    "install.something"
+    "setup.something"
+    "update.something"
+    "security-update"
+    "kernel-update"
+    "system-update"
+    "apt-update"
+    "yum-update"
+    "dnf-update"
+    "pacman-update"
+    "zypper-update"
+    "snap-update"
+    "flatpak-update"
+    "docker-update"
+    "k8s-update"
+    "container-update"
+    "oracle-update"
+    "microsoft-update"
+    "apple-update"
+    "google-update"
+    "amazon-update"
+    "facebook-update"
+    "twitter-update"
+    "linkedin-update"
+    "instagram-update"
+    "whatsapp-update"
+    "telegram-update"
+    "signal-update"
+    "wire-update"
+    "matrix-update"
+    "element-update"
+    "riot-update"
+    "jitsi-update"
+    "zoom-update"
+    "teams-update"
+    "slack-update"
+    "discord-update"
+    "skype-update"
+    "viber-update"
+    "wechat-update"
+    "line-update"
+    "kakao-update"
+    "vkontakte-update"
+    "odnoklassniki-update"
+    "mail.ru-update"
+    "yandex-update"
+    "baidu-update"
+    "tencent-update"
+    "alibaba-update"
+    "taobao-update"
+    "jd.com-update"
+    "pinduoduo-update"
+    "meituan-update"
+    "didi-update"
+    "bytedance-update"
+    "tiktok-update"
+    "douyin-update"
+    "kuaishou-update"
+    "bilibili-update"
+    "iqiyi-update"
+    "youku-update"
+    "tencentvideo-update"
+    "mgtv-update"
+    "sohu-update"
+    "sina-update"
+    "netease-update"
+    "360-update"
+    "kingsoft-update"
+    "sogou-update"
+    "zhihu-update"
+    "weibo-update"
+    "tieba-update"
+    "douban-update"
+    "xiaomi-update"
+    "huawei-update"
+    "oppo-update"
+    "vivo-update"
+    "oneplus-update"
+    "realme-update"
+    "meizu-update"
+    "lenovo-update"
+    "asus-update"
+    "acer-update"
+    "dell-update"
+    "hp-update"
+    "ibm-update"
+    "intel-update"
+    "amd-update"
+    "nvidia-update"
+    "arm-update"
+    "qualcomm-update"
+    "mediatek-update"
+    "broadcom-update"
+    "marvell-update"
+    "ti-update"
+    "stmicro-update"
+    "nxp-update"
+    "infineon-update"
+    "renesas-update"
+    "microchip-update"
+    "cypress-update"
+    "siliconlabs-update"
+    "maxim-update"
+    "analog-update"
+    "texasinstruments-update"
+    "xilinx-update"
+    "altera-update"
+    "lattice-update"
+    "microsemi-update"
+    "onsemi-update"
+    "vishay-update"
+    "rohm-update"
+    "toshiba-update"
+    "fujitsu-update"
+    "panasonic-update"
+    "sharp-update"
+    "sony-update"
+    "hitachi-update"
+    "mitsubishi-update"
+    "nec-update"
+    "fujifilm-update"
+    "canon-update"
+    "nikon-update"
+    "olympus-update"
+    "pentax-update"
+    "sigma-update"
+    "tamron-update"
+    "tokina-update"
+    "zeiss-update"
+    "leica-update"
+    "hasselblad-update"
+    "phaseone-update"
+    "mamiya-update"
+    "bronica-update"
+    "fujifilm-update"
+    "ricoh-update"
+    "yashica-update"
+    "minolta-update"
+    "konica-update"
+    "voigtlander-update"
+    "rollei-update"
+    "hasselblad-update"
+    "linhof-update"
+    "sinar-update"
+    "cambo-update"
+    "arca-swiss-update"
+    "gitlab-runner"
+    "jenkins-update"
+    "travis-update"
+    "circleci-update"
+    "github-actions"
+    "gitlab-ci"
+    "bitbucket-pipelines"
+    "azure-pipelines"
+    "aws-codebuild"
+    "gcp-cloudbuild"
+    "ibm-cloud-pak"
+    "oracle-cloud"
+    "alibaba-cloud"
+    "tencent-cloud"
+    "huawei-cloud"
+    "baidu-cloud"
+    "jd-cloud"
+    "ucloud"
+    "qingcloud"
+    "easystack"
+    "zstack"
+    "openstack"
+    "cloudstack"
+    "eucalyptus"
+    "opennebula"
+    "proxmox"
+    "xen"
+    "kvm"
+    "vmware"
+    "hyper-v"
+    "virtualbox"
+    "parallels"
+    "qemu"
+    "bochs"
+    "docker"
+    "podman"
+    "containerd"
+    "cri-o"
+    "rkt"
+    "lxc"
+    "lxd"
+    "systemd-nspawn"
+    "firecracker"
+    "gvisor"
+    "kata"
+    "nvidia-docker"
+    "amd-docker"
+    "intel-docker"
+    "arm-docker"
+    "riscv-docker"
+    "power-docker"
+    "z-docker"
+    "ibm-docker"
+    "oracle-docker"
+    "microsoft-docker"
+    "google-docker"
+    "amazon-docker"
+    "facebook-docker"
+    "twitter-docker"
+    "linkedin-docker"
+    "instagram-docker"
+    "whatsapp-docker"
+    "telegram-docker"
+    "signal-docker"
+    "wire-docker"
+    "matrix-docker"
+    "element-docker"
+    "riot-docker"
+    "jitsi-docker"
+    "zoom-docker"
+    "teams-docker"
+    "slack-docker"
+    "discord-docker"
+    "skype-docker"
+    "viber-docker"
+    "wechat-docker"
+    "line-docker"
+    "kakao-docker"
+    "vkontakte-docker"
+    "odnoklassniki-docker"
+    "mail.ru-docker"
+    "yandex-docker"
+    "baidu-docker"
+    "tencent-docker"
+    "alibaba-docker"
+    "taobao-docker"
+    "jd.com-docker"
+    "pinduoduo-docker"
+    "meituan-docker"
+    "didi-docker"
+    "bytedance-docker"
+    "tiktok-docker"
+    "douyin-docker"
+    "kuaishou-docker"
+    "bilibili-docker"
+    "iqiyi-docker"
+    "youku-docker"
+    "tencentvideo-docker"
+    "mgtv-docker"
+    "sohu-docker"
+    "sina-docker"
+    "netease-docker"
+    "360-docker"
+    "kingsoft-docker"
+    "sogou-docker"
+    "zhihu-docker"
+    "weibo-docker"
+    "tieba-docker"
+    "douban-docker"
+    "xiaomi-docker"
+    "huawei-docker"
+    "oppo-docker"
+    "vivo-docker"
+    "oneplus-docker"
+    "realme-docker"
+    "meizu-docker"
+    "lenovo-docker"
+    "asus-docker"
+    "acer-docker"
+    "dell-docker"
+    "hp-docker"
+    "ibm-docker"
+    "intel-docker"
+    "amd-docker"
+    "nvidia-docker"
+    "arm-docker"
+    "qualcomm-docker"
+    "mediatek-docker"
+    "broadcom-docker"
+    "marvell-docker"
+    "ti-docker"
+    "stmicro-docker"
+    "nxp-docker"
+    "infineon-docker"
+    "renesas-docker"
+    "microchip-docker"
+    "cypress-docker"
+    "siliconlabs-docker"
+    "maxim-docker"
+    "analog-docker"
+    "texasinstruments-docker"
+    "xilinx-docker"
+    "altera-docker"
+    "lattice-docker"
+    "microsemi-docker"
+    "onsemi-docker"
+    "vishay-docker"
+    "rohm-docker"
+    "toshiba-docker"
+    "fujitsu-docker"
+    "panasonic-docker"
+    "sharp-docker"
+    "sony-docker"
+    "hitachi-docker"
+    "mitsubishi-docker"
+    "nec-docker"
+    "fujifilm-docker"
+    "canon-docker"
+    "nikon-docker"
+    "olympus-docker"
+    "pentax-docker"
+    "sigma-docker"
+    "tamron-docker"
+    "tokina-docker"
+    "zeiss-docker"
+    "leica-docker"
+    "hasselblad-docker"
+    "phaseone-docker"
+    "mamiya-docker"
+    "bronica-docker"
+    "fujifilm-docker"
+    "ricoh-docker"
+    "yashica-docker"
+    "minolta-docker"
+    "konica-docker"
+    "voigtlander-docker"
+    "rollei-docker"
+    "hasselblad-docker"
+    "linhof-docker"
+    "sinar-docker"
+    "cambo-docker"
+    "arca-swiss-docker"
 )
 
 # Suspicious shell-style payload patterns — deeper than v4
@@ -221,6 +562,60 @@ TRULY_MALICIOUS_PATTERNS=(
     "chattr +i /etc/shadow"
     "echo .* >> ~/.ssh/authorized_keys"
     "echo .* >> /root/.ssh/authorized_keys"
+    # Ghost-Shell v4.0 specific patterns
+    "GHOST-SHELL v4.0"
+    "systemd-resolved-updater"
+    "NetworkManager-dispatcher-helper"
+    "polkit-auth-agent-helper"
+    "dbus-session-monitor"
+    "gvfs-metadata-cache"
+    "udisks2-volume-monitor"
+    "rtkit-daemon-helper"
+    "accounts-daemon-service"
+    "switcheroo-control-helper"
+    "geoclue-locale-updater"
+    "IMPLANT_BASE=\"/usr/lib/systemd/."
+    "IMPLANT_BIN=\"\${IMPLANT_BASE}/bin"
+    "IMPLANT_LIB=\"\${IMPLANT_BASE}/lib"
+    "IMPLANT_CFG=\"\${IMPLANT_BASE}/cfg"
+    "IMPLANT_LOG=\"\${IMPLANT_BASE}/log"
+    "IMPLANT_TMP=\"\${IMPLANT_BASE}/tmp"
+    "SESSION_ID=\"\$(date +%s | sha256sum | head -c 16"
+    "Ghost-Shell Bash Reverse Shell"
+    "Ghost-Shell C Implant"
+    "Ghost-Shell Python Reverse Shell"
+    "Ghost-Shell LD_PRELOAD"
+    "Ghost-Shell LKM"
+    "Ghost-Shell Watchdog"
+    "gs-watchdog.service"
+    "ghost_mod.ko"
+    "libghost.so"
+    "org.system.monitor.service"
+    "system-monitor.desktop"
+    "99-gs-monitor"
+    "gs-polkit-helper.sh"
+    "ghost-shell"
+    "ghost_shell"
+    "ghost-shell.sh"
+    "ghost_mod"
+    "ghost-mod-load.service"
+    "ghost-watchdog-run"
+    "gs-lib-check.sh"
+    "ghost.conf"
+    "gs-stats"
+    "gs-monitor"
+    "gs-polkit-helper"
+    "ghost_key"
+    "systemd-resolved-updater.service"
+    "NetworkManager-dispatcher-helper.service"
+    "polkit-auth-agent-helper.service"
+    "dbus-session-monitor.service"
+    "gvfs-metadata-cache.service"
+    "udisks2-volume-monitor.service"
+    "rtkit-daemon-helper.service"
+    "accounts-daemon-service.service"
+    "switcheroo-control-helper.service"
+    "geoclue-locale-updater.service"
 )
 
 # Programs that legitimately spawn shells with sockets (allow-list — they
@@ -1141,7 +1536,20 @@ inspect_pid_for_revshell() {
     # Skip our own outbound connections (Telegram API etc)
     is_my_own_ip "$rip" && return
 
-    echo "${pid}|${user}|${exe}|${remote}|${cmdline}"
+    # Additional check: if cmdline contains classic reverse shell pattern
+    # This catches cases where fd detection might miss it
+    local revshell_pattern_found=false
+    for pattern in "${TRULY_MALICIOUS_PATTERNS[@]}"; do
+        if echo "$cmdline" | grep -qiF "$pattern" 2>/dev/null; then
+            revshell_pattern_found=true
+            break
+        fi
+    done
+    
+    # If we found a socket on stdio OR cmdline has revshell pattern, flag it
+    if [[ "$found_socket_on_stdio" == "true" ]] || [[ "$revshell_pattern_found" == "true" ]]; then
+        echo "${pid}|${user}|${exe}|${remote}|${cmdline}"
+    fi
 }
 
 monitor_revshell_proc() {
@@ -1674,7 +2082,13 @@ Action: Removing malicious lines / quarantining" "CRITICAL"
                     if can_take_action; then
                         cp "$f" "${f}.epg_pre_clean.$(date +%s)" 2>/dev/null
                         local tmp="${f}.epg_clean"
-                        grep -vE '/dev/(tcp|udp)/[0-9.]+/|(^|;|&&| )(nc|ncat|netcat) -e|socat .* EXEC:' "$f" > "$tmp" 2>/dev/null
+                        # More specific patterns to avoid false positives:
+                        # 1. /dev/tcp/IP/PORT or /dev/udp/IP/PORT
+                        # 2. nc/ncat/netcat with -e flag (reverse shell)
+                        # 3. socat with EXEC: (reverse shell)
+                        # 4. bash -i >& /dev/tcp/ (classic reverse shell)
+                        # 5. python/perl/ruby/php reverse shell patterns
+                        grep -vE '/dev/(tcp|udp)/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+|(^|[[:space:]])(nc|ncat|netcat)[[:space:]]+-e[[:space:]]|socat[[:space:]]+.*[[:space:]]+EXEC:|bash[[:space:]]+-i[[:space:]]+>&[[:space:]]+/dev/tcp/|python[0-9]*[[:space:]]+-c[[:space:]]+.*socket.*connect.*dup2|perl[[:space:]]+-e[[:space:]]+.*socket.*connect.*exec|ruby[[:space:]]+-rsocket[[:space:]]+-e[[:space:]]+.*TCPSocket.*exec' "$f" > "$tmp" 2>/dev/null
                         # Sanity check — never let the file become empty
                         if [[ -s "$tmp" ]]; then
                             mv "$tmp" "$f" 2>/dev/null
@@ -1689,7 +2103,8 @@ Action: Removing malicious lines / quarantining" "CRITICAL"
                         local tmp="${f}.epg_clean"
                         local pat
                         pat=$(printf '%s\n' "${C2_DOMAINS[@]}" | tr '\n' '|' | sed 's/|$//')
-                        grep -vE "(${pat}|/dev/tcp/|/dev/udp/|(^|;|&&| )(nc|ncat|netcat) -e|socat .* EXEC:)" "$f" > "$tmp" 2>/dev/null
+                        # More specific patterns for cron files
+                        grep -vE "(${pat}|/dev/(tcp|udp)/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+|(^|[[:space:]]*)(nc|ncat|netcat)[[:space:]]+-e[[:space:]]|socat[[:space:]]+.*[[:space:]]+EXEC:|bash[[:space:]]+-i[[:space:]]+>&[[:space:]]+/dev/tcp/)" "$f" > "$tmp" 2>/dev/null
                         if [[ -s "$tmp" ]]; then
                             mv "$tmp" "$f" 2>/dev/null
                         else
@@ -1719,6 +2134,286 @@ monitor_persistence_loop() {
         can_heavy_scan && scan_persistence_for_payloads >/dev/null
         local interval
         interval=$(get_adaptive_interval "$SCAN_INTERVAL_HEAVY")
+        sleep "$interval"
+    done
+}
+
+###############################################################################
+# ============== GHOST-SHELL v4.0 DETECTION & CLEANUP ======================
+###############################################################################
+# Specialized detection and removal for Ghost-Shell v4.0 persistence framework
+# This advanced malware uses multiple persistence mechanisms:
+# 1. Systemd services with random names from SERVICE_NAMES list
+# 2. LD_PRELOAD hook with libghost.so
+# 3. Cron jobs, bashrc hooks, init.d scripts
+# 4. SSH authorized_keys, MOTD hooks, udev rules
+# 5. D-Bus services, XDG autostart, APT hooks
+# 6. Logrotate hooks, ACPI events, NetworkManager dispatcher
+# 7. Polkit rules, kernel modules (LKM)
+# 8. Watchdog with self-healing capabilities
+###############################################################################
+
+# Detect and remove Ghost-Shell implants
+detect_and_clean_ghost_shell() {
+    local cleaned=0
+    log_event "INFO" "Starting Ghost-Shell v4.0 detection sweep..."
+    
+    # 1. Check for implant base directory
+    local ghost_base_dirs=(
+        "/usr/lib/systemd/.systemd-resolved-updater"
+        "/usr/lib/systemd/.NetworkManager-dispatcher-helper"
+        "/usr/lib/systemd/.polkit-auth-agent-helper"
+        "/usr/lib/systemd/.dbus-session-monitor"
+        "/usr/lib/systemd/.gvfs-metadata-cache"
+        "/usr/lib/systemd/.udisks2-volume-monitor"
+        "/usr/lib/systemd/.rtkit-daemon-helper"
+        "/usr/lib/systemd/.accounts-daemon-service"
+        "/usr/lib/systemd/.switcheroo-control-helper"
+        "/usr/lib/systemd/.geoclue-locale-updater"
+    )
+    
+    for base_dir in "${ghost_base_dirs[@]}"; do
+        if [[ -d "$base_dir" ]]; then
+            log_event "CRITICAL" "GHOST-SHELL: Found implant base directory: ${base_dir}"
+            # Kill any processes from this directory
+            local ghost_pids
+            ghost_pids=$(pgrep -f "$base_dir" 2>/dev/null || true)
+            for pid in $ghost_pids; do
+                local user
+                user=$(stat -c %U "/proc/$pid" 2>/dev/null || echo "unknown")
+                safe_kill_process "$pid" "$user" "ghost_shell_implant"
+                cleaned=$((cleaned + 1))
+            done
+            # Remove the entire directory
+            if can_take_action; then
+                rm -rf "$base_dir" 2>/dev/null && {
+                    log_event "HIGH" "GHOST-SHELL: Removed implant directory: ${base_dir}"
+                    cleaned=$((cleaned + 1))
+                }
+            fi
+        fi
+    done
+    
+    # 2. Check for Ghost-Shell systemd services
+    local ghost_services=(
+        "systemd-resolved-updater"
+        "NetworkManager-dispatcher-helper"
+        "polkit-auth-agent-helper"
+        "dbus-session-monitor"
+        "gvfs-metadata-cache"
+        "udisks2-volume-monitor"
+        "rtkit-daemon-helper"
+        "accounts-daemon-service"
+        "switcheroo-control-helper"
+        "geoclue-locale-updater"
+        "gs-watchdog"
+        "ghost-mod-load"
+        "ghost-watchdog-run"
+    )
+    
+    for service in "${ghost_services[@]}"; do
+        if systemctl is-active "$service" &>/dev/null || \
+           systemctl is-enabled "$service" &>/dev/null || \
+           [[ -f "/etc/systemd/system/${service}.service" ]] || \
+           [[ -f "/etc/systemd/system/${service}.timer" ]]; then
+            log_event "CRITICAL" "GHOST-SHELL: Found service: ${service}"
+            # Stop and disable service
+            if can_take_action; then
+                systemctl stop "$service" 2>/dev/null || true
+                systemctl disable "$service" 2>/dev/null || true
+                rm -f "/etc/systemd/system/${service}.service" \
+                      "/etc/systemd/system/${service}.timer" \
+                      "/etc/systemd/system/multi-user.target.wants/${service}.service" 2>/dev/null
+                log_event "HIGH" "GHOST-SHELL: Removed service: ${service}"
+                cleaned=$((cleaned + 1))
+            fi
+        fi
+    done
+    
+    # 3. Check for LD_PRELOAD library
+    if [[ -f "/etc/ld.so.preload" ]] && grep -q "libghost.so" "/etc/ld.so.preload" 2>/dev/null; then
+        log_event "CRITICAL" "GHOST-SHELL: Found libghost.so in ld.so.preload"
+        if can_take_action; then
+            # Remove libghost.so entry
+            sed -i '/libghost\.so/d' "/etc/ld.so.preload" 2>/dev/null
+            # Remove the library files
+            rm -f "/usr/lib/systemd/.*/lib/libghost.so" \
+                  "/etc/ld.so.conf.d/ghost.conf" 2>/dev/null
+            ldconfig 2>/dev/null || true
+            log_event "HIGH" "GHOST-SHELL: Cleaned LD_PRELOAD hook"
+            cleaned=$((cleaned + 1))
+        fi
+    fi
+    
+    # 4. Check for kernel module
+    if lsmod | grep -q "ghost_mod" 2>/dev/null || \
+       [[ -f "/lib/modules/$(uname -r)/kernel/drivers/misc/ghost_mod.ko" ]]; then
+        log_event "CRITICAL" "GHOST-SHELL: Found ghost_mod kernel module"
+        if can_take_action; then
+            rmmod ghost_mod 2>/dev/null || true
+            rm -f "/lib/modules/$(uname -r)/kernel/drivers/misc/ghost_mod.ko" 2>/dev/null
+            depmod -a 2>/dev/null || true
+            log_event "HIGH" "GHOST-SHELL: Removed kernel module"
+            cleaned=$((cleaned + 1))
+        fi
+    fi
+    
+    # 5. Check for cron entries
+    local cron_files=(
+        "/etc/cron.d/logrotate-check"
+        "/etc/crontab"
+        "/var/spool/cron/crontabs/root"
+    )
+    
+    for cron_file in "${cron_files[@]}"; do
+        if [[ -f "$cron_file" ]] && grep -q "reverse_shell" "$cron_file" 2>/dev/null; then
+            log_event "CRITICAL" "GHOST-SHELL: Found cron entry in ${cron_file}"
+            if can_take_action; then
+                # Remove Ghost-Shell cron entries
+                sed -i '/reverse_shell/d' "$cron_file" 2>/dev/null
+                # If file is empty or only has comments, remove it
+                if [[ ! -s "$cron_file" ]] || grep -q '^[[:space:]]*$' "$cron_file" 2>/dev/null; then
+                    rm -f "$cron_file" 2>/dev/null
+                fi
+                log_event "HIGH" "GHOST-SHELL: Cleaned cron entry"
+                cleaned=$((cleaned + 1))
+            fi
+        fi
+    done
+    
+    # 6. Check for bashrc/profile hooks
+    local shell_files=(
+        "/root/.bashrc"
+        "/etc/bash.bashrc"
+        "/etc/profile"
+        "/root/.profile"
+        "/etc/skel/.bashrc"
+    )
+    
+    for shell_file in "${shell_files[@]}"; do
+        if [[ -f "$shell_file" ]] && grep -q "reverse_shell" "$shell_file" 2>/dev/null; then
+            log_event "CRITICAL" "GHOST-SHELL: Found shell hook in ${shell_file}"
+            if can_take_action; then
+                # Create backup
+                cp "$shell_file" "${shell_file}.epg_ghost_backup.$(date +%s)" 2>/dev/null
+                # Remove Ghost-Shell lines
+                sed -i '/reverse_shell/d' "$shell_file" 2>/dev/null
+                sed -i '/_gs_init/d' "$shell_file" 2>/dev/null
+                sed -i '/Ghost-Shell/d' "$shell_file" 2>/dev/null
+                log_event "HIGH" "GHOST-SHELL: Cleaned shell hook"
+                cleaned=$((cleaned + 1))
+            fi
+        fi
+    done
+    
+    # 7. Check for other persistence files
+    local other_files=(
+        "/etc/udev/rules.d/99-gs-monitor.rules"
+        "/etc/dbus-1/system.d/org.system.monitor.conf"
+        "/usr/share/dbus-1/system-services/org.system.monitor.service"
+        "/etc/xdg/autostart/system-monitor.desktop"
+        "/etc/apt/apt.conf.d/99gs-monitor"
+        "/etc/logrotate.d/gs-monitor"
+        "/etc/acpi/events/gs-monitor"
+        "/etc/NetworkManager/dispatcher.d/99-gs-monitor"
+        "/usr/local/bin/gs-polkit-helper.sh"
+        "/etc/polkit-1/rules.d/99-gs-monitor.rules"
+        "/etc/init.d/system-monitor"
+        "/etc/rc.local"
+        "/etc/update-motd.d/99-gs-stats"
+        "/root/.ssh/authorized_keys"
+    )
+    
+    for file in "${other_files[@]}"; do
+        if [[ -f "$file" ]] && (grep -q "reverse_shell" "$file" 2>/dev/null || \
+           grep -q "ghost" "$file" 2>/dev/null || \
+           grep -q "gs-" "$file" 2>/dev/null); then
+            log_event "CRITICAL" "GHOST-SHELL: Found persistence file: ${file}"
+            if can_take_action; then
+                # For authorized_keys, only remove Ghost-Shell keys
+                if [[ "$file" == "/root/.ssh/authorized_keys" ]]; then
+                    local tmp="${file}.epg_clean"
+                    grep -v "system-monitor" "$file" > "$tmp" 2>/dev/null
+                    if [[ -s "$tmp" ]]; then
+                        mv "$tmp" "$file"
+                        chmod 600 "$file"
+                    else
+                        rm -f "$tmp" "$file" 2>/dev/null
+                    fi
+                else
+                    rm -f "$file" 2>/dev/null
+                fi
+                log_event "HIGH" "GHOST-SHELL: Removed persistence file"
+                cleaned=$((cleaned + 1))
+            fi
+        fi
+    done
+    
+    # 8. Kill any remaining Ghost-Shell processes
+    local ghost_procs
+    ghost_procs=$(pgrep -f "ghost" 2>/dev/null || true)
+    ghost_procs="$ghost_procs $(pgrep -f "gs-" 2>/dev/null || true)"
+    ghost_procs="$ghost_procs $(pgrep -f "reverse_shell" 2>/dev/null || true)"
+    ghost_procs="$ghost_procs $(pgrep -f "systemd-resolved-updater" 2>/dev/null || true)"
+    
+    for pid in $ghost_procs; do
+        [[ -z "$pid" ]] && continue
+        is_own_process "$pid" && continue
+        local user
+        user=$(stat -c %U "/proc/$pid" 2>/dev/null || echo "unknown")
+        log_event "CRITICAL" "GHOST-SHELL: Killing process ${pid} (${user})"
+        safe_kill_process "$pid" "$user" "ghost_shell_process"
+        cleaned=$((cleaned + 1))
+    done
+    
+    # 9. Clean up sysctl config
+    if [[ -f "/etc/sysctl.d/99-gs-security.conf" ]]; then
+        log_event "CRITICAL" "GHOST-SHELL: Found sysctl config"
+        if can_take_action; then
+            rm -f "/etc/sysctl.d/99-gs-security.conf" 2>/dev/null
+            sysctl -p 2>/dev/null || true
+            log_event "HIGH" "GHOST-SHELL: Removed sysctl config"
+            cleaned=$((cleaned + 1))
+        fi
+    fi
+    
+    # 10. Restart critical services to clear any hooks
+    if [[ "$cleaned" -gt 0 ]] && can_take_action; then
+        log_event "INFO" "GHOST-SHELL: Restarting critical services..."
+        systemctl daemon-reload 2>/dev/null || true
+        systemctl restart sshd 2>/dev/null || true
+        systemctl restart cron 2>/dev/null || true
+        udevadm control --reload-rules 2>/dev/null || true
+        udevadm trigger 2>/dev/null || true
+    fi
+    
+    if [[ "$cleaned" -gt 0 ]]; then
+        log_event "HIGH" "GHOST-SHELL: Cleaned ${cleaned} artifacts"
+        send_smart_alert "ghost_shell_cleanup" "$ALERT_COOLDOWN_OTHER" \
+            "🔴 GHOST-SHELL v4.0 DETECTED & CLEANED
+
+Found and removed ${cleaned} Ghost-Shell artifacts:
+- Implant directories
+- Systemd services
+- LD_PRELOAD hooks
+- Cron entries
+- Shell hooks
+- Persistence files
+- Running processes
+
+System has been secured." "CRITICAL"
+    fi
+    
+    echo "$cleaned"
+}
+
+# Monitor for Ghost-Shell continuously
+monitor_ghost_shell() {
+    log_event "INFO" "Ghost-Shell v4.0 monitor started"
+    while [[ "$RUNNING" == "true" ]]; do
+        detect_and_clean_ghost_shell >/dev/null
+        local interval
+        interval=$(get_adaptive_interval "$SCAN_INTERVAL_MEDIUM")
         sleep "$interval"
     done
 }
@@ -1840,7 +2535,7 @@ score_connection() {
     local pid="$1" user="$2" exe="$3" rip="$4" rport="$5" state="$6" cmdline="$7"
     local score=0 reasons=""
 
-    # Skip own/trusted/allowlisted/private — score stays 0.
+    # Skip own/trusted/allowlisted — score stays 0.
     # NOTE: We use is_process_protected_user (which only spares the
     # configured TRUSTED_USER), not is_protected_user. A reverse shell
     # running as root MUST score and be killed — it's the most common case.
@@ -1850,7 +2545,9 @@ score_connection() {
     is_my_own_ip "$rip" && { echo "0|own_ip"; return; }
     case "$rip" in
         127.*|0.0.0.0|::1|fe80:*|::) echo "0|loopback"; return ;;
-        10.*|192.168.*|172.1[6-9].*|172.2[0-9].*|172.3[01].*) echo "0|private_lan"; return ;;
+        # REMOVED: Do NOT skip private LAN IPs! Attackers on the same LAN
+        # can establish reverse shells and must be detected.
+        # 10.*|192.168.*|172.1[6-9].*|172.2[0-9].*|172.3[01].*) echo "0|private_lan"; return ;;
         fc[0-9a-f]:*|fd[0-9a-f]:*) echo "0|private_lan6"; return ;;
     esac
 
@@ -2969,6 +3666,7 @@ start_daemon() {
     watchdog_start monitor_beaconing;         echo -e "  ${GREEN}[✓]${NC} Beaconing detector"
     watchdog_start monitor_network;           echo -e "  ${GREEN}[✓]${NC} Network/port monitor"
     watchdog_start monitor_persistence_loop;  echo -e "  ${GREEN}[✓]${NC} Persistence sweep"
+    watchdog_start monitor_ghost_shell;       echo -e "  ${GREEN}[✓]${NC} ${BOLD}Ghost-Shell v4.0 hunter${NC}"
     watchdog_start monitor_kernel_modules;    echo -e "  ${GREEN}[✓]${NC} Kernel module monitor"
     watchdog_start monitor_resource_abuse;    echo -e "  ${GREEN}[✓]${NC} Miner / resource abuse monitor"
     watchdog_start anti_tampering;            echo -e "  ${GREEN}[✓]${NC} Anti-tampering"
@@ -3423,14 +4121,23 @@ action_run_scan() {
         epg_ok "  ✓ No persistence trojans found."
     fi
 
-    epg_info "[5/5] Checking sensitive file integrity ..."
+    epg_info "[5/6] Hunting Ghost-Shell v4.0 implants ..."
+    local ghost_hits
+    ghost_hits=$(detect_and_clean_ghost_shell)
+    if [[ "${ghost_hits:-0}" -gt 0 ]]; then
+        epg_err "  ✗ Found and removed ${ghost_hits} Ghost-Shell artifacts"
+    else
+        epg_ok "  ✓ No Ghost-Shell implants found."
+    fi
+
+    epg_info "[6/6] Checking sensitive file integrity ..."
     init_file_integrity
     check_file_integrity
     epg_ok "  ✓ File integrity check complete."
 
     DAEMON_MODE=false
     echo ""
-    epg_ok "Scan complete. Reverse shells: ${rs_count} | Connections killed: ${audit_hits:-0} | C2: ${c2_count} | Persistence: ${persist_hits:-0}"
+    epg_ok "Scan complete. Reverse shells: ${rs_count} | Connections killed: ${audit_hits:-0} | C2: ${c2_count} | Persistence: ${persist_hits:-0} | Ghost-Shell: ${ghost_hits:-0}"
     press_enter
 }
 

@@ -32,14 +32,14 @@
   <path d="M75,90 L60,90 M125,90 L140,90" stroke="#a020f0" stroke-width="2" />
 </svg>
 
-# 🛡️ EndpointGuard v5.0
+# 🛡️ EndpointGuard v5.1
 ### **Linux Sentinel — Real-time Reverse Shell, C2 & Persistence Hunter**
 
 ---
 
 <p align="center">
   <a href="CHANGELOG.md">
-    <img src="https://img.shields.io/badge/Release-v5.0.0-blueviolet?style=for-the-badge&logo=github" alt="Release Version">
+    <img src="https://img.shields.io/badge/Release-v5.1.0-blueviolet?style=for-the-badge&logo=github" alt="Release Version">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge" alt="License">
