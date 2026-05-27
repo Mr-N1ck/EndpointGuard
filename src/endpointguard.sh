@@ -95,14 +95,14 @@ SCAN_INTERVAL_HEAVY=180
 SCAN_INTERVAL_VERY_HEAVY=600
 
 REALTIME_LOGIN_INTERVAL=2
-REVSHELL_SCAN_INTERVAL=3       # /proc fd hunter — fast
+REVSHELL_SCAN_INTERVAL=2       # /proc fd hunter — very fast
 C2_SCAN_INTERVAL=10
 BEACON_WINDOW=900              # seconds — analyse beaconing within this window
 BEACON_MIN_HITS=4              # number of similar connections to flag
 
 # Connection auditor (v5.1)
-CONN_AUDIT_INTERVAL=5          # seconds between full netstat sweeps
-CONN_RISK_THRESHOLD=60         # 0–100, flag at this score
+CONN_AUDIT_INTERVAL=3          # seconds between full netstat sweeps
+CONN_RISK_THRESHOLD=50         # 0–100, flag at this score (lowered for better detection)
 CONN_AUDIT_USE_NETSTAT=true    # also cross-check with netstat if available
 
 ALERT_COOLDOWN_SSH=120
@@ -173,344 +173,6 @@ C2_DOMAINS=(
     "oast.fun"
     "burpcollaborator.net"
     "canarytokens.com"
-    # Advanced C2 infrastructure
-    "cloudflarestorage.com"
-    "githubusercontent.com/raw"
-    "gitlab.com/raw"
-    "bitbucket.org/raw"
-    "raw.githubusercontent.com"
-    "gist.githubusercontent.com"
-    "git.io"
-    "sh.rustup.rs"
-    "curl.sh"
-    "install.something"
-    "setup.something"
-    "update.something"
-    "security-update"
-    "kernel-update"
-    "system-update"
-    "apt-update"
-    "yum-update"
-    "dnf-update"
-    "pacman-update"
-    "zypper-update"
-    "snap-update"
-    "flatpak-update"
-    "docker-update"
-    "k8s-update"
-    "container-update"
-    "oracle-update"
-    "microsoft-update"
-    "apple-update"
-    "google-update"
-    "amazon-update"
-    "facebook-update"
-    "twitter-update"
-    "linkedin-update"
-    "instagram-update"
-    "whatsapp-update"
-    "telegram-update"
-    "signal-update"
-    "wire-update"
-    "matrix-update"
-    "element-update"
-    "riot-update"
-    "jitsi-update"
-    "zoom-update"
-    "teams-update"
-    "slack-update"
-    "discord-update"
-    "skype-update"
-    "viber-update"
-    "wechat-update"
-    "line-update"
-    "kakao-update"
-    "vkontakte-update"
-    "odnoklassniki-update"
-    "mail.ru-update"
-    "yandex-update"
-    "baidu-update"
-    "tencent-update"
-    "alibaba-update"
-    "taobao-update"
-    "jd.com-update"
-    "pinduoduo-update"
-    "meituan-update"
-    "didi-update"
-    "bytedance-update"
-    "tiktok-update"
-    "douyin-update"
-    "kuaishou-update"
-    "bilibili-update"
-    "iqiyi-update"
-    "youku-update"
-    "tencentvideo-update"
-    "mgtv-update"
-    "sohu-update"
-    "sina-update"
-    "netease-update"
-    "360-update"
-    "kingsoft-update"
-    "sogou-update"
-    "zhihu-update"
-    "weibo-update"
-    "tieba-update"
-    "douban-update"
-    "xiaomi-update"
-    "huawei-update"
-    "oppo-update"
-    "vivo-update"
-    "oneplus-update"
-    "realme-update"
-    "meizu-update"
-    "lenovo-update"
-    "asus-update"
-    "acer-update"
-    "dell-update"
-    "hp-update"
-    "ibm-update"
-    "intel-update"
-    "amd-update"
-    "nvidia-update"
-    "arm-update"
-    "qualcomm-update"
-    "mediatek-update"
-    "broadcom-update"
-    "marvell-update"
-    "ti-update"
-    "stmicro-update"
-    "nxp-update"
-    "infineon-update"
-    "renesas-update"
-    "microchip-update"
-    "cypress-update"
-    "siliconlabs-update"
-    "maxim-update"
-    "analog-update"
-    "texasinstruments-update"
-    "xilinx-update"
-    "altera-update"
-    "lattice-update"
-    "microsemi-update"
-    "onsemi-update"
-    "vishay-update"
-    "rohm-update"
-    "toshiba-update"
-    "fujitsu-update"
-    "panasonic-update"
-    "sharp-update"
-    "sony-update"
-    "hitachi-update"
-    "mitsubishi-update"
-    "nec-update"
-    "fujifilm-update"
-    "canon-update"
-    "nikon-update"
-    "olympus-update"
-    "pentax-update"
-    "sigma-update"
-    "tamron-update"
-    "tokina-update"
-    "zeiss-update"
-    "leica-update"
-    "hasselblad-update"
-    "phaseone-update"
-    "mamiya-update"
-    "bronica-update"
-    "fujifilm-update"
-    "ricoh-update"
-    "yashica-update"
-    "minolta-update"
-    "konica-update"
-    "voigtlander-update"
-    "rollei-update"
-    "hasselblad-update"
-    "linhof-update"
-    "sinar-update"
-    "cambo-update"
-    "arca-swiss-update"
-    "gitlab-runner"
-    "jenkins-update"
-    "travis-update"
-    "circleci-update"
-    "github-actions"
-    "gitlab-ci"
-    "bitbucket-pipelines"
-    "azure-pipelines"
-    "aws-codebuild"
-    "gcp-cloudbuild"
-    "ibm-cloud-pak"
-    "oracle-cloud"
-    "alibaba-cloud"
-    "tencent-cloud"
-    "huawei-cloud"
-    "baidu-cloud"
-    "jd-cloud"
-    "ucloud"
-    "qingcloud"
-    "easystack"
-    "zstack"
-    "openstack"
-    "cloudstack"
-    "eucalyptus"
-    "opennebula"
-    "proxmox"
-    "xen"
-    "kvm"
-    "vmware"
-    "hyper-v"
-    "virtualbox"
-    "parallels"
-    "qemu"
-    "bochs"
-    "docker"
-    "podman"
-    "containerd"
-    "cri-o"
-    "rkt"
-    "lxc"
-    "lxd"
-    "systemd-nspawn"
-    "firecracker"
-    "gvisor"
-    "kata"
-    "nvidia-docker"
-    "amd-docker"
-    "intel-docker"
-    "arm-docker"
-    "riscv-docker"
-    "power-docker"
-    "z-docker"
-    "ibm-docker"
-    "oracle-docker"
-    "microsoft-docker"
-    "google-docker"
-    "amazon-docker"
-    "facebook-docker"
-    "twitter-docker"
-    "linkedin-docker"
-    "instagram-docker"
-    "whatsapp-docker"
-    "telegram-docker"
-    "signal-docker"
-    "wire-docker"
-    "matrix-docker"
-    "element-docker"
-    "riot-docker"
-    "jitsi-docker"
-    "zoom-docker"
-    "teams-docker"
-    "slack-docker"
-    "discord-docker"
-    "skype-docker"
-    "viber-docker"
-    "wechat-docker"
-    "line-docker"
-    "kakao-docker"
-    "vkontakte-docker"
-    "odnoklassniki-docker"
-    "mail.ru-docker"
-    "yandex-docker"
-    "baidu-docker"
-    "tencent-docker"
-    "alibaba-docker"
-    "taobao-docker"
-    "jd.com-docker"
-    "pinduoduo-docker"
-    "meituan-docker"
-    "didi-docker"
-    "bytedance-docker"
-    "tiktok-docker"
-    "douyin-docker"
-    "kuaishou-docker"
-    "bilibili-docker"
-    "iqiyi-docker"
-    "youku-docker"
-    "tencentvideo-docker"
-    "mgtv-docker"
-    "sohu-docker"
-    "sina-docker"
-    "netease-docker"
-    "360-docker"
-    "kingsoft-docker"
-    "sogou-docker"
-    "zhihu-docker"
-    "weibo-docker"
-    "tieba-docker"
-    "douban-docker"
-    "xiaomi-docker"
-    "huawei-docker"
-    "oppo-docker"
-    "vivo-docker"
-    "oneplus-docker"
-    "realme-docker"
-    "meizu-docker"
-    "lenovo-docker"
-    "asus-docker"
-    "acer-docker"
-    "dell-docker"
-    "hp-docker"
-    "ibm-docker"
-    "intel-docker"
-    "amd-docker"
-    "nvidia-docker"
-    "arm-docker"
-    "qualcomm-docker"
-    "mediatek-docker"
-    "broadcom-docker"
-    "marvell-docker"
-    "ti-docker"
-    "stmicro-docker"
-    "nxp-docker"
-    "infineon-docker"
-    "renesas-docker"
-    "microchip-docker"
-    "cypress-docker"
-    "siliconlabs-docker"
-    "maxim-docker"
-    "analog-docker"
-    "texasinstruments-docker"
-    "xilinx-docker"
-    "altera-docker"
-    "lattice-docker"
-    "microsemi-docker"
-    "onsemi-docker"
-    "vishay-docker"
-    "rohm-docker"
-    "toshiba-docker"
-    "fujitsu-docker"
-    "panasonic-docker"
-    "sharp-docker"
-    "sony-docker"
-    "hitachi-docker"
-    "mitsubishi-docker"
-    "nec-docker"
-    "fujifilm-docker"
-    "canon-docker"
-    "nikon-docker"
-    "olympus-docker"
-    "pentax-docker"
-    "sigma-docker"
-    "tamron-docker"
-    "tokina-docker"
-    "zeiss-docker"
-    "leica-docker"
-    "hasselblad-docker"
-    "phaseone-docker"
-    "mamiya-docker"
-    "bronica-docker"
-    "fujifilm-docker"
-    "ricoh-docker"
-    "yashica-docker"
-    "minolta-docker"
-    "konica-docker"
-    "voigtlander-docker"
-    "rollei-docker"
-    "hasselblad-docker"
-    "linhof-docker"
-    "sinar-docker"
-    "cambo-docker"
-    "arca-swiss-docker"
 )
 
 # Suspicious shell-style payload patterns — deeper than v4
@@ -524,19 +186,10 @@ TRULY_MALICIOUS_PATTERNS=(
     "0<&196;exec 196<>/dev/tcp"
     "exec 5<>/dev/tcp"
     "rm -rf / --no-preserve-root"
-    "rm -rf /*"
+    "rm -rf /\\*"
     "dd if=/dev/zero of=/dev/sd"
     "dd if=/dev/null of=/dev/sd"
     "mkfs.ext4 /dev/sd"
-    ":(){ :|:& };:"
-    "echo .* | base64 -d | bash"
-    "echo .* | base64 -d | sh"
-    "wget -O- .* | bash"
-    "wget -O- .* | sh"
-    "curl .* | bash"
-    "curl .* | sh"
-    "curl -fsSL .* | bash"
-    "curl -fsSL .* | sh"
     "python -c .*socket.*connect.*dup2"
     "python3 -c .*socket.*connect.*dup2"
     "python -c .*pty.spawn"
@@ -556,66 +209,8 @@ TRULY_MALICIOUS_PATTERNS=(
     "export HISTSIZE=0"
     "export HISTFILESIZE=0"
     "unset HISTFILE"
-    "history -c"
-    "history -w"
-    "chattr +i /etc/passwd"
-    "chattr +i /etc/shadow"
-    "echo .* >> ~/.ssh/authorized_keys"
-    "echo .* >> /root/.ssh/authorized_keys"
-    # Ghost-Shell v4.0 specific patterns
-    "GHOST-SHELL v4.0"
-    "systemd-resolved-updater"
-    "NetworkManager-dispatcher-helper"
-    "polkit-auth-agent-helper"
-    "dbus-session-monitor"
-    "gvfs-metadata-cache"
-    "udisks2-volume-monitor"
-    "rtkit-daemon-helper"
-    "accounts-daemon-service"
-    "switcheroo-control-helper"
-    "geoclue-locale-updater"
-    "IMPLANT_BASE=\"/usr/lib/systemd/."
-    "IMPLANT_BIN=\"\${IMPLANT_BASE}/bin"
-    "IMPLANT_LIB=\"\${IMPLANT_BASE}/lib"
-    "IMPLANT_CFG=\"\${IMPLANT_BASE}/cfg"
-    "IMPLANT_LOG=\"\${IMPLANT_BASE}/log"
-    "IMPLANT_TMP=\"\${IMPLANT_BASE}/tmp"
-    "SESSION_ID=\"\$(date +%s | sha256sum | head -c 16"
-    "Ghost-Shell Bash Reverse Shell"
-    "Ghost-Shell C Implant"
-    "Ghost-Shell Python Reverse Shell"
-    "Ghost-Shell LD_PRELOAD"
-    "Ghost-Shell LKM"
-    "Ghost-Shell Watchdog"
-    "gs-watchdog.service"
-    "ghost_mod.ko"
-    "libghost.so"
-    "org.system.monitor.service"
-    "system-monitor.desktop"
-    "99-gs-monitor"
-    "gs-polkit-helper.sh"
-    "ghost-shell"
-    "ghost_shell"
-    "ghost-shell.sh"
-    "ghost_mod"
-    "ghost-mod-load.service"
-    "ghost-watchdog-run"
-    "gs-lib-check.sh"
-    "ghost.conf"
-    "gs-stats"
-    "gs-monitor"
-    "gs-polkit-helper"
-    "ghost_key"
-    "systemd-resolved-updater.service"
-    "NetworkManager-dispatcher-helper.service"
-    "polkit-auth-agent-helper.service"
-    "dbus-session-monitor.service"
-    "gvfs-metadata-cache.service"
-    "udisks2-volume-monitor.service"
-    "rtkit-daemon-helper.service"
-    "accounts-daemon-service.service"
-    "switcheroo-control-helper.service"
-    "geoclue-locale-updater.service"
+    "chattr \\+i /etc/passwd"
+    "chattr \\+i /etc/shadow"
 )
 
 # Programs that legitimately spawn shells with sockets (allow-list — they
@@ -1536,20 +1131,7 @@ inspect_pid_for_revshell() {
     # Skip our own outbound connections (Telegram API etc)
     is_my_own_ip "$rip" && return
 
-    # Additional check: if cmdline contains classic reverse shell pattern
-    # This catches cases where fd detection might miss it
-    local revshell_pattern_found=false
-    for pattern in "${TRULY_MALICIOUS_PATTERNS[@]}"; do
-        if echo "$cmdline" | grep -qiF "$pattern" 2>/dev/null; then
-            revshell_pattern_found=true
-            break
-        fi
-    done
-    
-    # If we found a socket on stdio OR cmdline has revshell pattern, flag it
-    if [[ "$found_socket_on_stdio" == "true" ]] || [[ "$revshell_pattern_found" == "true" ]]; then
-        echo "${pid}|${user}|${exe}|${remote}|${cmdline}"
-    fi
+    echo "${pid}|${user}|${exe}|${remote}|${cmdline}"
 }
 
 monitor_revshell_proc() {
@@ -2449,7 +2031,7 @@ monitor_ghost_shell() {
 SUSPICIOUS_PORTS=(
     4444 4445 4446 4447 4448 4449
     1337 31337 1234 12345 54321
-    9001 9002 9003
+    9001 9002 9003 9033 9090 9091
     5555 6666 6667 6697 7777 8888
     8080 8181 8443 9999 10000 10001
     1080 1180 2222 3333 4321
@@ -2626,96 +2208,82 @@ score_connection() {
 audit_connections_once() {
     local report_only="${1:-no}"
     local hits=0
-    local raw conns_tcp conns_udp
 
+    # ─── Method 1: Use ss (preferred — shows process info) ───────────────
+    # ss -tnp output on Kali Linux looks like:
+    #   State   Recv-Q  Send-Q  Local Address:Port   Peer Address:Port  Process
+    #   ESTAB   0       0       10.19.76.192:34310   10.19.76.135:9001  users:(("sh",pid=1234,fd=0))
+    #   SYN-SENT 0      1       10.19.76.192:35724   192.168.1.21:4444  users:(("bash",pid=5678,fd=3))
+    #
+    # ─── Method 2: Use netstat as fallback ───────────────────────────────
+    # netstat -tnp output:
+    #   Proto Recv-Q Send-Q Local Address    Foreign Address  State      PID/Program
+    #   tcp   0      0      10.19.76.192:34310 10.19.76.135:9001 ESTABLISHED 1234/sh
+
+    local line pid remote rip rport user exe cmdline
+
+    # ─── Scan with ss ────────────────────────────────────────────────────
     if command -v ss &>/dev/null; then
-        # Capture ALL states (not just established) — catches reverse shells
-        # in SYN_SENT (just connected) and CLOSE_WAIT (lingering after kill).
-        conns_tcp=$(ss -tnp 2>/dev/null | tail -n +2)
-        conns_udp=$(ss -unp 2>/dev/null | tail -n +2)
-    elif command -v netstat &>/dev/null; then
-        conns_tcp=$(netstat -tnp 2>/dev/null | awk 'NR>2 && $6=="ESTABLISHED"')
-        conns_udp=""
-    else
-        log_event "WARN" "Connection auditor: neither ss nor netstat available"
-        echo 0; return
-    fi
-    raw="${conns_tcp}
-${conns_udp}"
+        while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
+            # Skip headers
+            [[ "$line" == State* ]] && continue
+            [[ "$line" == Recv* ]] && continue
+            [[ "$line" == Netid* ]] && continue
 
-    local line
-    while IFS= read -r line; do
-        [[ -z "$line" ]] && continue
-        # Skip header
-        echo "$line" | grep -qE "^(Recv-Q|Netid|Active|State)" && continue
+            # Extract PID from users:(("name",pid=NNN,fd=N))
+            pid=$(echo "$line" | grep -oP 'pid=\K[0-9]+' | head -1)
+            [[ -z "$pid" || ! -d "/proc/$pid" ]] && continue
 
-        # Extract pid from users:(("name",pid=NN,fd=NN)) anywhere in the line
-        local pid
-        pid=$(echo "$line" | grep -oP 'pid=\K\d+' | head -1)
-        if [[ -z "$pid" ]]; then
-            # netstat formats it differently: "12345/bash"
-            pid=$(echo "$line" | awk '{print $7}' | cut -d/ -f1)
-        fi
-        [[ -z "$pid" || ! -d "/proc/$pid" ]] && continue
-
-        # Extract remote endpoint. ss layout:
-        #   Recv-Q Send-Q LOCAL_ADDR:PORT  PEER_ADDR:PORT  users:((...))
-        # We want field 4 (peer) when using ss; netstat puts foreign addr at $5.
-        local remote
-        if echo "$line" | grep -q 'users:(('; then
-            # ss: peer is the field immediately before "users:"
-            remote=$(echo "$line" | awk '{
-                for (i=1;i<=NF;i++) {
-                    if ($i ~ /^users:\(\(/) {print $(i-1); exit}
-                }
-            }')
-        elif command -v netstat &>/dev/null; then
-            # netstat tcp:  Proto Recv-Q Send-Q Local Foreign State PID/Program
+            # Extract peer address — it's the field that looks like IP:PORT
+            # and comes after the local address
+            # Format: STATE RECV SEND LOCAL:PORT PEER:PORT users:(...)
+            # Fields:  $1    $2   $3   $4        $5       $6...
             remote=$(echo "$line" | awk '{print $5}')
-        else
-            remote=$(echo "$line" | awk '{print $5}')
-        fi
-
-        # Strip surrounding [ ] from IPv6
-        remote=$(echo "$remote" | sed 's/^\[//;s/\]:/:/')
-
-        # IPv6 addresses contain : already — split at the LAST colon for port
-        local rip rport
-        rport="${remote##*:}"
-        rip="${remote%:*}"
-
-        [[ -z "$rip" || -z "$rport" || "$rip" == "0.0.0.0" || "$rip" == "*" || "$rip" == "::" ]] && continue
-        # Validate port is numeric
-        [[ ! "$rport" =~ ^[0-9]+$ ]] && continue
-
-        local user exe cmdline
-        user=$(stat -c %U "/proc/$pid" 2>/dev/null)
-        exe=$(readlink "/proc/$pid/exe" 2>/dev/null)
-        cmdline=$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | head -c 400)
-
-        local result
-        result=$(score_connection "$pid" "$user" "$exe" "$rip" "$rport" "ESTABLISHED" "$cmdline")
-        local score reasons
-        score="${result%%|*}"
-        reasons="${result#*|}"
-
-        # If only reporting (on-demand scan), echo all non-zero scores
-        if [[ "$report_only" == "yes" ]]; then
-            if [[ "$score" -gt 0 && "$reasons" != "own" && "$reasons" != "protected_user" && \
-                  "$reasons" != "allowlisted_daemon" && "$reasons" != "loopback" && \
-                  "$reasons" != "private_lan" && "$reasons" != "own_ip" ]]; then
-                echo "${score}|${pid}|${user}|${exe}|${rip}:${rport}|${reasons}"
+            
+            # Validate it looks like an address
+            if [[ -z "$remote" ]] || ! echo "$remote" | grep -qP '^\d+\.\d+\.\d+\.\d+:\d+$'; then
+                # Try alternative parsing — find IP:PORT pattern after local addr
+                remote=$(echo "$line" | grep -oP '\d+\.\d+\.\d+\.\d+:\d+' | tail -1)
             fi
-            continue
-        fi
+            [[ -z "$remote" ]] && continue
 
-        # Below threshold => move on
-        [[ "$score" -lt "$CONN_RISK_THRESHOLD" ]] && continue
+            # Split IP and port
+            rport="${remote##*:}"
+            rip="${remote%:*}"
 
-        hits=$((hits + 1))
-        log_event "CRITICAL" "CONN AUDITOR HIT score=${score} pid=${pid} user=${user} exe=${exe} remote=${rip}:${rport} reasons=${reasons}"
-        send_smart_alert "conn_audit_${rip}_${rport}" "$ALERT_COOLDOWN_NET" \
-            "🔴 SUSPICIOUS CONNECTION
+            [[ -z "$rip" || -z "$rport" || "$rip" == "0.0.0.0" || "$rip" == "*" ]] && continue
+            [[ ! "$rport" =~ ^[0-9]+$ ]] && continue
+
+            # Get process info
+            user=$(stat -c %U "/proc/$pid" 2>/dev/null || echo "unknown")
+            exe=$(readlink "/proc/$pid/exe" 2>/dev/null || echo "unknown")
+            cmdline=$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | head -c 400)
+
+            # Score this connection
+            local result
+            result=$(score_connection "$pid" "$user" "$exe" "$rip" "$rport" "ESTABLISHED" "$cmdline")
+            local score reasons
+            score="${result%%|*}"
+            reasons="${result#*|}"
+
+            # Report mode — echo all non-zero scores
+            if [[ "$report_only" == "yes" ]]; then
+                if [[ "$score" -gt 0 && "$reasons" != "own" && "$reasons" != "trusted_user" && \
+                      "$reasons" != "allowlisted_daemon" && "$reasons" != "loopback" && \
+                      "$reasons" != "own_ip" ]]; then
+                    echo "${score}|${pid}|${user}|${exe}|${rip}:${rport}|${reasons}"
+                fi
+                continue
+            fi
+
+            # Below threshold => skip
+            [[ "$score" -lt "$CONN_RISK_THRESHOLD" ]] && continue
+
+            hits=$((hits + 1))
+            log_event "CRITICAL" "CONN AUDITOR HIT score=${score} pid=${pid} user=${user} exe=${exe} remote=${rip}:${rport} reasons=${reasons}"
+            send_smart_alert "conn_audit_${rip}_${rport}" "$ALERT_COOLDOWN_NET" \
+                "🔴 SUSPICIOUS CONNECTION KILLED
 
 Score: ${score}/100
 PID: ${pid}
@@ -2727,42 +2295,203 @@ Cmd: $(echo "$cmdline" | head -c 200)
 
 Action: Killing process + severing socket + blocking IP" "CRITICAL"
 
-        # Respond — kill the process AND its parent chain. A reverse shell
-        # like `bash bash.sh` has parent=bash (the wrapper). Kill both.
-        local kill_pid="$pid" depth=0
-        local seen_pids=""
-        while [[ -n "$kill_pid" && "$kill_pid" != "0" && "$kill_pid" != "1" && "$depth" -lt 5 ]]; do
-            # Cycle / re-visit guard
-            case " $seen_pids " in *" $kill_pid "*) break ;; esac
-            seen_pids="$seen_pids $kill_pid"
-            local parent_pid parent_user parent_cmd
-            parent_pid=$(ps -o ppid= -p "$kill_pid" 2>/dev/null | tr -d ' ')
-            parent_user=$(stat -c %U "/proc/$kill_pid" 2>/dev/null)
-            parent_cmd=$(tr '\0' ' ' < "/proc/$kill_pid/cmdline" 2>/dev/null)
-            is_own_process "$kill_pid" && break
-            case "$parent_cmd" in
-                *systemd*|*init*|*sshd*|*login*|/usr/lib/systemd*) break ;;
-            esac
-            safe_kill_process "$kill_pid" "$parent_user" "conn_audit:${reasons}"
-            kill_pid="$parent_pid"
-            depth=$((depth + 1))
-        done
-        kernel_kill_conn "$rip" "$rport"
-        safe_block_ip "$rip" "conn_audit:${reasons}"
-        if is_dropper_path "$exe" && [[ -f "$exe" ]]; then
-            quarantine_file "$exe" "conn_audit_dropper"
-        fi
-    done <<< "$raw"
+            # Kill the process AND its parent chain
+            local kill_pid="$pid" depth=0
+            local seen_pids=""
+            while [[ -n "$kill_pid" && "$kill_pid" != "0" && "$kill_pid" != "1" && "$depth" -lt 5 ]]; do
+                case " $seen_pids " in *" $kill_pid "*) break ;; esac
+                seen_pids="$seen_pids $kill_pid"
+                local parent_pid parent_user parent_cmd
+                parent_pid=$(ps -o ppid= -p "$kill_pid" 2>/dev/null | tr -d ' ')
+                parent_user=$(stat -c %U "/proc/$kill_pid" 2>/dev/null)
+                parent_cmd=$(tr '\0' ' ' < "/proc/$kill_pid/cmdline" 2>/dev/null)
+                is_own_process "$kill_pid" && break
+                case "$parent_cmd" in
+                    *systemd*|*init*|*sshd*|*login*|/usr/lib/systemd*) break ;;
+                esac
+                safe_kill_process "$kill_pid" "$parent_user" "conn_audit:${reasons}"
+                kill_pid="$parent_pid"
+                depth=$((depth + 1))
+            done
+            kernel_kill_conn "$rip" "$rport"
+            safe_block_ip "$rip" "conn_audit_score${score}"
 
-    [[ "$report_only" == "yes" ]] && return
+        done <<< "$(ss -tnp 2>/dev/null | tail -n +2)"
+
+        # Also scan UDP
+        while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
+            [[ "$line" == State* || "$line" == Recv* || "$line" == Netid* ]] && continue
+            pid=$(echo "$line" | grep -oP 'pid=\K[0-9]+' | head -1)
+            [[ -z "$pid" || ! -d "/proc/$pid" ]] && continue
+            remote=$(echo "$line" | awk '{print $5}')
+            if [[ -z "$remote" ]] || ! echo "$remote" | grep -qP '^\d+\.\d+\.\d+\.\d+:\d+$'; then
+                remote=$(echo "$line" | grep -oP '\d+\.\d+\.\d+\.\d+:\d+' | tail -1)
+            fi
+            [[ -z "$remote" ]] && continue
+            rport="${remote##*:}"
+            rip="${remote%:*}"
+            [[ -z "$rip" || -z "$rport" || "$rip" == "0.0.0.0" || "$rip" == "*" ]] && continue
+            [[ ! "$rport" =~ ^[0-9]+$ ]] && continue
+            user=$(stat -c %U "/proc/$pid" 2>/dev/null || echo "unknown")
+            exe=$(readlink "/proc/$pid/exe" 2>/dev/null || echo "unknown")
+            cmdline=$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | head -c 400)
+            local result
+            result=$(score_connection "$pid" "$user" "$exe" "$rip" "$rport" "ESTABLISHED" "$cmdline")
+            local score reasons
+            score="${result%%|*}"
+            reasons="${result#*|}"
+            if [[ "$report_only" == "yes" ]]; then
+                [[ "$score" -gt 0 ]] && echo "${score}|${pid}|${user}|${exe}|${rip}:${rport}|${reasons}"
+                continue
+            fi
+            [[ "$score" -lt "$CONN_RISK_THRESHOLD" ]] && continue
+            hits=$((hits + 1))
+            log_event "CRITICAL" "CONN AUDITOR HIT (UDP) score=${score} pid=${pid} remote=${rip}:${rport}"
+            safe_kill_process "$pid" "$user" "conn_audit_udp:${reasons}"
+            kernel_kill_conn "$rip" "$rport"
+            safe_block_ip "$rip" "conn_audit_udp_score${score}"
+        done <<< "$(ss -unp 2>/dev/null | tail -n +2)"
+
+    elif command -v netstat &>/dev/null; then
+        # Fallback: netstat
+        while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
+            [[ "$line" == Active* || "$line" == Proto* ]] && continue
+            # netstat: Proto Recv-Q Send-Q Local Foreign State PID/Program
+            pid=$(echo "$line" | awk '{print $7}' | cut -d/ -f1)
+            [[ -z "$pid" || ! "$pid" =~ ^[0-9]+$ || ! -d "/proc/$pid" ]] && continue
+            remote=$(echo "$line" | awk '{print $5}')
+            [[ -z "$remote" ]] && continue
+            rport="${remote##*:}"
+            rip="${remote%:*}"
+            [[ -z "$rip" || -z "$rport" || "$rip" == "0.0.0.0" ]] && continue
+            [[ ! "$rport" =~ ^[0-9]+$ ]] && continue
+            user=$(stat -c %U "/proc/$pid" 2>/dev/null || echo "unknown")
+            exe=$(readlink "/proc/$pid/exe" 2>/dev/null || echo "unknown")
+            cmdline=$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | head -c 400)
+            local result
+            result=$(score_connection "$pid" "$user" "$exe" "$rip" "$rport" "ESTABLISHED" "$cmdline")
+            local score reasons
+            score="${result%%|*}"
+            reasons="${result#*|}"
+            if [[ "$report_only" == "yes" ]]; then
+                [[ "$score" -gt 0 ]] && echo "${score}|${pid}|${user}|${exe}|${rip}:${rport}|${reasons}"
+                continue
+            fi
+            [[ "$score" -lt "$CONN_RISK_THRESHOLD" ]] && continue
+            hits=$((hits + 1))
+            log_event "CRITICAL" "CONN AUDITOR HIT score=${score} pid=${pid} remote=${rip}:${rport}"
+            safe_kill_process "$pid" "$user" "conn_audit:${reasons}"
+            kernel_kill_conn "$rip" "$rport"
+            safe_block_ip "$rip" "conn_audit_score${score}"
+        done <<< "$(netstat -tnp 2>/dev/null)"
+    else
+        log_event "WARN" "Connection auditor: neither ss nor netstat available"
+        echo 0; return
+    fi
+
     echo "$hits"
 }
 
 monitor_connection_audit() {
     log_event "INFO" "Connection auditor started (interval=${CONN_AUDIT_INTERVAL}s, threshold=${CONN_RISK_THRESHOLD}/100)"
     while [[ "$RUNNING" == "true" ]]; do
+        # Primary: full scoring-based audit
         audit_connections_once "no" >/dev/null
+        # Secondary: direct shell-with-socket killer (catches anything scoring missed)
+        kill_shell_connections_direct
         sleep "$CONN_AUDIT_INTERVAL"
+    done
+}
+
+# Direct approach: find ANY shell process with an outbound TCP connection
+# to a non-trusted IP. No scoring — if a shell has a socket to an external
+# IP, it's a reverse shell. Period.
+kill_shell_connections_direct() {
+    local pid exe comm user rip rport
+    for pid_dir in /proc/[0-9]*; do
+        pid=$(basename "$pid_dir")
+        [[ ! -d "/proc/$pid" ]] && continue
+        is_own_process "$pid" && continue
+
+        exe=$(readlink "/proc/$pid/exe" 2>/dev/null)
+        [[ -z "$exe" ]] && continue
+        comm=$(cat "/proc/$pid/comm" 2>/dev/null)
+        
+        # Only check shell processes
+        proc_is_shell "$exe" "$comm" || continue
+        is_shell_socket_allowed "$exe" && continue
+
+        user=$(stat -c %U "/proc/$pid" 2>/dev/null)
+        is_process_protected_user "$user" && continue
+
+        # Check if fd 0, 1, or 2 is a socket
+        local fd_dir="/proc/$pid/fd"
+        [[ -d "$fd_dir" ]] || continue
+
+        local socket_inode=""
+        for fd in 0 1 2; do
+            if [[ -L "${fd_dir}/${fd}" ]]; then
+                local target
+                target=$(readlink "${fd_dir}/${fd}" 2>/dev/null)
+                if [[ "$target" == socket:* ]]; then
+                    socket_inode="${target#socket:[}"
+                    socket_inode="${socket_inode%]}"
+                    break
+                fi
+            fi
+        done
+        [[ -z "$socket_inode" ]] && continue
+
+        # Resolve socket to remote IP
+        local remote
+        remote=$(inode_to_remote "$socket_inode")
+        [[ -z "$remote" || "$remote" == ":0" ]] && continue
+        rip="${remote%:*}"
+        rport="${remote##*:}"
+
+        # Skip loopback and own IPs
+        [[ "$rip" == "127.0.0.1" || "$rip" == "0.0.0.0" || -z "$rip" ]] && continue
+        is_my_own_ip "$rip" && continue
+
+        # THIS IS A REVERSE SHELL — kill it immediately
+        local cmdline
+        cmdline=$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | head -c 400)
+        
+        log_event "CRITICAL" "DIRECT KILL: Shell pid=${pid} (${exe}) has socket to ${rip}:${rport}"
+        send_smart_alert "direct_kill_${rip}_${rport}" "$ALERT_COOLDOWN_NET" \
+            "🔴 REVERSE SHELL KILLED (Direct Detection)
+
+PID: ${pid}
+User: ${user}
+Shell: ${exe}
+Remote: ${rip}:${rport}
+Cmd: $(echo "$cmdline" | head -c 200)
+
+Action: Process killed + connection severed + IP blocked" "CRITICAL"
+
+        # Kill the process chain
+        local kill_pid="$pid" depth=0 seen_pids=""
+        while [[ -n "$kill_pid" && "$kill_pid" != "0" && "$kill_pid" != "1" && "$depth" -lt 5 ]]; do
+            case " $seen_pids " in *" $kill_pid "*) break ;; esac
+            seen_pids="$seen_pids $kill_pid"
+            local parent_pid parent_cmd
+            parent_pid=$(ps -o ppid= -p "$kill_pid" 2>/dev/null | tr -d ' ')
+            parent_cmd=$(tr '\0' ' ' < "/proc/$kill_pid/cmdline" 2>/dev/null)
+            is_own_process "$kill_pid" && break
+            case "$parent_cmd" in
+                *systemd*|*init*|*sshd*|*login*|/usr/lib/systemd*) break ;;
+            esac
+            safe_kill_process "$kill_pid" "$user" "direct_revshell_kill"
+            kill_pid="$parent_pid"
+            depth=$((depth + 1))
+        done
+
+        # Sever connection at kernel level
+        kernel_kill_conn "$rip" "$rport"
+        # Block the attacker IP
+        safe_block_ip "$rip" "direct_revshell"
     done
 }
 
