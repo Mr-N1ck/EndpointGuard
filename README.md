@@ -219,26 +219,7 @@ All local configurations, active databases, and system logs are stored in a sing
 <!-- Centered, beautifully styled logo footer -->
 <div align="center">
 
-<svg width="120" height="120" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="footerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ff007f" />
-      <stop offset="50%" stop-color="#a020f0" />
-      <stop offset="100%" stop-color="#00ffcc" />
-    </linearGradient>
-    <filter id="glowFooter" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="5" result="blur" />
-      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-    </filter>
-  </defs>
-  <!-- Cyber Outer Diamond -->
-  <rect x="35" y="35" width="130" height="130" rx="15" transform="rotate(45 100 100)" stroke="url(#footerGrad)" stroke-width="3" filter="url(#glowFooter)" />
-  <!-- Inner Shield -->
-  <path d="M100,55 C115,55 135,60 135,80 C135,110 112,130 100,142 C88,130 65,110 65,80 C65,60 85,55 100,55 Z" fill="#090b11" stroke="#00ffcc" stroke-width="2.5" />
-  <!-- Centered Sentinel Dot -->
-  <circle cx="100" cy="92" r="8" fill="#ff007f" filter="url(#glowFooter)" />
-  <circle cx="100" cy="92" r="3" fill="#00ffcc" />
-</svg>
+<img src="docs/images/logo.jpeg" width="120" height="120" style="border-radius: 50%; border: 3px solid #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.6);" alt="Prince Gaur Avatar" />
 
 ### **Created with 🛡️ by Prince Gaur ([@Mr-N1ck](https://github.com/Mr-N1ck))**
 *Dedicated to securing the open-source Linux community.*
