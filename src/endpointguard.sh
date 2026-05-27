@@ -593,11 +593,25 @@ is_system_user() {
     return 1
 }
 is_protected_user() {
+    # "Account-level protection" — don't lock the account, don't kill ALL of
+    # the user's sessions. Used by safe_lock_account / safe_kill_sessions.
     local user="$1"
     [[ -z "$user" ]] && return 0
     is_trusted_user "$user" && return 0
     is_system_user "$user" && return 0
     [[ "$user" == "root" ]] && return 0
+    return 1
+}
+
+# Process-level protection — much narrower than account protection.
+# Used by safe_kill_process. We DO kill malicious processes even when they
+# run as root, because attackers commonly land as root via SUID payloads,
+# kernel exploits, or compromised services. The trusted_user is still
+# protected because killing their bash would lock them out.
+is_process_protected_user() {
+    local user="$1"
+    [[ -z "$user" ]] && return 0
+    is_trusted_user "$user" && return 0
     return 1
 }
 is_own_process() {
@@ -666,12 +680,20 @@ detect_my_ips() {
     log_event "INFO" "Owner IPs detected: ${MY_CURRENT_IPS}"
 }
 is_my_own_ip() {
+    # Strict check: ONLY local interface IPs and explicitly-configured
+    # TRUSTED_IPS qualify as "my own". TRUSTED_NETWORKS is intentionally
+    # NOT consulted here — a reverse shell connecting from an attacker on
+    # the same LAN must still be detected. Network-level trust is only
+    # used at login time (where SSH/PAM logs need to know the source).
     local ip="$1"
     [[ -z "$ip" || "$ip" == "local" || "$ip" == ":0" || "$ip" == "unknown" ]] && return 0
+    [[ "$ip" == "127.0.0.1" || "$ip" == "::1" ]] && return 0
     for my_ip in $MY_CURRENT_IPS; do
         [[ "$ip" == "$my_ip" ]] && return 0
     done
-    is_trusted_ip "$ip" && return 0
+    for tip in $TRUSTED_IPS; do
+        [[ "$ip" == "$tip" ]] && return 0
+    done
     return 1
 }
 is_my_own_session() {
@@ -741,7 +763,7 @@ safe_kill_process() {
         log_event "INFO" "[MONITOR] Would kill PID=${pid} user=${user} (${reason})"
         return
     fi
-    is_protected_user "$user" && { log_event "WARN" "REFUSED kill on protected user=${user}"; return; }
+    is_process_protected_user "$user" && { log_event "WARN" "REFUSED kill on trusted user=${user}"; return; }
     is_own_process "$pid" && return
     log_event "HIGH" "KILLING PID=${pid} user=${user} (${reason})"
     # Kill child processes first then the target — handles forked reverse shells
@@ -1152,8 +1174,27 @@ Cmd: $(echo "$rs_cmd" | head -c 200)
 
 Action: Killing process + severing connection + blocking IP" "CRITICAL"
 
-            # 1. Kill the process (and all its children — important for fork shells)
-            safe_kill_process "$rs_pid" "$rs_user" "reverse_shell"
+            # 1. Kill the process AND its parent chain — payloads often look
+            #    like:  bash → bash bash.sh → bash -i (the actual revshell)
+            #    Killing only the deepest bash leaves the wrapper alive which
+            #    can respawn. Walk up the parent chain.
+            local kill_pid="$rs_pid" depth=0
+            local seen_pids=""
+            while [[ -n "$kill_pid" && "$kill_pid" != "0" && "$kill_pid" != "1" && "$depth" -lt 5 ]]; do
+                case " $seen_pids " in *" $kill_pid "*) break ;; esac
+                seen_pids="$seen_pids $kill_pid"
+                local parent_pid parent_user parent_cmd
+                parent_pid=$(ps -o ppid= -p "$kill_pid" 2>/dev/null | tr -d ' ')
+                parent_user=$(stat -c %U "/proc/$kill_pid" 2>/dev/null)
+                parent_cmd=$(tr '\0' ' ' < "/proc/$kill_pid/cmdline" 2>/dev/null)
+                is_own_process "$kill_pid" && break
+                case "$parent_cmd" in
+                    *systemd*|*init*|*sshd*|*login*|/usr/lib/systemd*) break ;;
+                esac
+                safe_kill_process "$kill_pid" "$parent_user" "reverse_shell_chain"
+                kill_pid="$parent_pid"
+                depth=$((depth + 1))
+            done
 
             # 2. Sever the kernel-level connection
             kernel_kill_conn "$rs_ip" "$rs_port"
@@ -1161,21 +1202,29 @@ Action: Killing process + severing connection + blocking IP" "CRITICAL"
             # 3. Block the remote IP
             safe_block_ip "$rs_ip" "reverse_shell"
 
-            # 4. Quarantine any payload script the shell was running
+            # 4. Quarantine any payload script the shell was running.
+            #    Look at the cmdline AND fuser-list for the rs_pid.
             local script_path
             script_path=$(echo "$rs_cmd" | awk '{for(i=1;i<=NF;i++){if($i ~ /^\//){print $i; exit}}}')
             if [[ -n "$script_path" && -f "$script_path" ]]; then
-                # Don't quarantine system shells themselves
                 case "$script_path" in
-                    /bin/*|/sbin/*|/usr/bin/*|/usr/sbin/*) ;;
+                    /bin/*|/sbin/*|/usr/bin/*|/usr/sbin/*|/lib*) ;;
                     *) quarantine_file "$script_path" "revshell_payload" ;;
                 esac
             fi
-
-            # 5. Kill all sessions of the user if not protected
-            if ! is_protected_user "$rs_user"; then
-                safe_kill_sessions "$rs_user"
+            # Also: any script the rs_pid had open (mmap-ed scripts)
+            if [[ -d "/proc/$rs_pid/fd" ]]; then
+                for fd_link in /proc/"$rs_pid"/fd/*; do
+                    local target
+                    target=$(readlink "$fd_link" 2>/dev/null)
+                    [[ "$target" == /tmp/* || "$target" == /var/tmp/* || "$target" == /dev/shm/* ]] && \
+                        [[ -f "$target" ]] && quarantine_file "$target" "revshell_open_fd"
+                done 2>/dev/null
             fi
+
+            # 5. Don't kill ALL sessions of the user — that would lock out a
+            #    legit root session. The chain-kill above handles the active
+            #    revshell. Trust the threshold/score and avoid collateral.
         done
         sleep "$interval"
     done
@@ -1260,28 +1309,53 @@ Cmd: $(echo "$cmdline" | head -c 250)" "CRITICAL"
         done
 
         # ------ Recently-modified file scan (catches dropped scripts) ------
-        # Anything written to /tmp, /var/tmp, /dev/shm, or user homes in the
-        # last interval that contains C2 indicators or revshell strings.
+        # Anything written to /tmp, /var/tmp, /dev/shm in the last interval
+        # that contains C2 indicators or revshell strings.
+        # NOTE: We deliberately exclude /home and /root from this real-time
+        # scanner because users keep legitimate scripts there (including the
+        # EndpointGuard source!). Persistence-sweep handles user homes.
         if can_heavy_scan; then
             local recent
-            recent=$(find /tmp /var/tmp /dev/shm /home /root \
+            recent=$(find /tmp /var/tmp /dev/shm \
                      -maxdepth 4 -type f \
                      -mmin -1 \
-                     \( -name "*.sh" -o -name "*.py" -o -name "*.pl" \
-                        -o -name "*.rb" -o -name "*.php" -o -name "*.js" \
-                        -o -name "*.txt" -o -name ".*" \) \
                      2>/dev/null | head -100)
             local f
             while IFS= read -r f; do
                 [[ -z "$f" || ! -f "$f" ]] && continue
-                # Skip files we created
+                # Hard-skip our own files and any common safe paths
                 case "$f" in
                     "$INSTALL_DIR"/*|"$QUARANTINE_DIR"/*|"$LOG_FILE"*) continue ;;
+                    */EndpointGuard/*|*/endpointguard*) continue ;;
+                    *.epg_*|*.epg_pre_clean.*) continue ;;
+                    /tmp/.X*|/tmp/.ICE-*|/tmp/.font-*|/tmp/dbus-*) continue ;;
+                    /tmp/systemd-*|/tmp/snap-*|/tmp/.com.*) continue ;;
                 esac
-                # Quick read — first 4 KB is enough
+                # Skip files larger than 1 MB (likely not a dropper, and we
+                # only sample the first 4 KB anyway).
+                local sz
+                sz=$(stat -c%s "$f" 2>/dev/null || echo 0)
+                [[ "${sz:-0}" -gt 1048576 ]] && continue
+
                 local content
                 content=$(head -c 4096 "$f" 2>/dev/null)
                 [[ -z "$content" ]] && continue
+
+                # CRITICAL: don't false-positive on detection tools. If the
+                # file mentions MULTIPLE C2 indicator strings literally, it's
+                # almost certainly a security tool (like EPG itself). A real
+                # malicious dropper uses ONE C2 channel.
+                local indicator_count=0
+                for ind in "${C2_DOMAINS[@]}"; do
+                    if echo "$content" | grep -qiF "$ind" 2>/dev/null; then
+                        indicator_count=$((indicator_count + 1))
+                        [[ "$indicator_count" -ge 5 ]] && break
+                    fi
+                done
+                if [[ "$indicator_count" -ge 5 ]]; then
+                    continue   # detection-tool source code
+                fi
+
                 local hit=""
                 for ind in "${C2_DOMAINS[@]}"; do
                     if echo "$content" | grep -qiF "$ind" 2>/dev/null; then
@@ -1289,11 +1363,27 @@ Cmd: $(echo "$cmdline" | head -c 250)" "CRITICAL"
                     fi
                 done
                 if [[ -z "$hit" ]]; then
-                    for pattern in "${TRULY_MALICIOUS_PATTERNS[@]}"; do
-                        if echo "$content" | grep -qiE "$pattern" 2>/dev/null; then
-                            hit="payload:${pattern}"; break
+                    # Match the actual revshell SYNTAX, not just substrings.
+                    # We require the file to look like an executable script
+                    # (shebang or .sh/.py/.pl extension) AND contain one of
+                    # the strict patterns below.
+                    local is_script=false
+                    head -1 "$f" 2>/dev/null | grep -qE '^#!' && is_script=true
+                    case "$f" in *.sh|*.py|*.pl|*.rb|*.php) is_script=true ;; esac
+                    if [[ "$is_script" == "true" ]]; then
+                        # Strict revshell syntax patterns
+                        if echo "$content" | grep -qE '/dev/(tcp|udp)/[0-9.]+/' 2>/dev/null; then
+                            hit="payload:/dev/tcp"
+                        elif echo "$content" | grep -qE 'nc -e |ncat -e |bash -e ' 2>/dev/null; then
+                            hit="payload:nc_exec"
+                        elif echo "$content" | grep -qE 'socat .* EXEC:' 2>/dev/null; then
+                            hit="payload:socat_exec"
+                        elif echo "$content" | grep -qE 'python3?[[:space:]]*-c[[:space:]]+["'\'']\s*import (socket|os).*connect.*dup2' 2>/dev/null; then
+                            hit="payload:python_revshell"
+                        elif echo "$content" | grep -qE 'pty\.spawn\(["'\''/]\w*sh' 2>/dev/null; then
+                            hit="payload:pty_spawn"
                         fi
-                    done
+                    fi
                 fi
                 if [[ -n "$hit" ]]; then
                     log_event "HIGH" "MALICIOUS FILE: ${f} indicator=${hit}"
@@ -1304,7 +1394,39 @@ Path: ${f}
 Indicator: ${hit}
 Owner: $(stat -c %U "$f" 2>/dev/null)
 
-Action: Quarantining" "HIGH"
+Action: Quarantining + killing any process holding it open" "HIGH"
+
+                    # CRITICAL FIX: kill any process that has this file open
+                    # OR is running as the file's content (the actual reverse
+                    # shell). fuser tells us who's reading the script.
+                    if can_take_action; then
+                        local holders
+                        holders=$(fuser "$f" 2>/dev/null | tr -s ' ' '\n' | grep -E '^[0-9]+$')
+                        for hpid in $holders; do
+                            local huser
+                            huser=$(stat -c %U "/proc/$hpid" 2>/dev/null)
+                            log_event "HIGH" "Killing PID $hpid (user=$huser) holding malicious file"
+                            safe_kill_process "$hpid" "$huser" "holds_malicious_file"
+                        done
+                        # Also: any bash/sh/python/etc child processes spawned
+                        # from this script — kill them via parent-PID match.
+                        # Find every recently-spawned shell whose cmdline mentions
+                        # this exact path.
+                        local fbase
+                        fbase=$(basename "$f")
+                        for pid in /proc/[0-9]*; do
+                            pid=$(basename "$pid")
+                            [[ ! -f "/proc/$pid/cmdline" ]] && continue
+                            is_own_process "$pid" && continue
+                            local pcmd puser
+                            pcmd=$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null)
+                            if echo "$pcmd" | grep -qF "$f" || echo "$pcmd" | grep -qF "$fbase"; then
+                                puser=$(stat -c %U "/proc/$pid" 2>/dev/null)
+                                log_event "HIGH" "Killing PID $pid running malicious script"
+                                safe_kill_process "$pid" "$puser" "running_malicious_file"
+                            fi
+                        done
+                    fi
                     quarantine_file "$f" "dropped_c2_payload"
                 fi
             done <<< "$recent"
@@ -1449,7 +1571,6 @@ scan_persistence_for_payloads() {
                 done < <(find "$target" -maxdepth 2 -type f 2>/dev/null)
             fi
         done
-        # authorized_keys are particularly important
         local ak="${home}/.ssh/authorized_keys"
         [[ -f "$ak" ]] && search_files+=("$ak")
     done
@@ -1457,23 +1578,71 @@ scan_persistence_for_payloads() {
     local f
     for f in "${search_files[@]}"; do
         [[ ! -f "$f" ]] && continue
-        case "$f" in "$INSTALL_DIR"/*|"$QUARANTINE_DIR"/*) continue ;; esac
+        case "$f" in
+            "$INSTALL_DIR"/*|"$QUARANTINE_DIR"/*) continue ;;
+            */EndpointGuard/*|*/endpointguard*) continue ;;
+            *.epg_*|*.epg_pre_clean.*) continue ;;
+        esac
+
         local content
         content=$(head -c 16384 "$f" 2>/dev/null)
         [[ -z "$content" ]] && continue
-        local hit=""
+
+        # Multi-indicator filter — if the file contains 5+ different C2
+        # indicator strings, it's almost certainly a security tool, not malware.
+        local indicator_count=0
         for ind in "${C2_DOMAINS[@]}"; do
             if echo "$content" | grep -qiF "$ind" 2>/dev/null; then
-                hit="$ind"; break
+                indicator_count=$((indicator_count + 1))
+                [[ "$indicator_count" -ge 5 ]] && break
             fi
         done
-        if [[ -z "$hit" ]]; then
-            for pattern in "${TRULY_MALICIOUS_PATTERNS[@]}"; do
-                if echo "$content" | grep -qiE "$pattern" 2>/dev/null; then
-                    hit="payload:${pattern}"; break
+        [[ "$indicator_count" -ge 5 ]] && continue
+
+        local hit=""
+        # For shell-rc files (.bashrc etc) we ONLY flag strict revshell
+        # syntax — not any mention of "bash -i" or a domain string. This
+        # prevents corrupting user prompts and aliases.
+        local strict_only=false
+        case "$f" in
+            */.bashrc|*/.bash_profile|*/.profile|*/.zshrc|*/.bash_login|*/.bash_logout)
+                strict_only=true
+                ;;
+            */.config/autostart/*|*/profile|*/bash.bashrc|*/bashrc|*/zshrc)
+                strict_only=true
+                ;;
+        esac
+
+        if [[ "$strict_only" == "true" ]]; then
+            # Only strict reverse-shell syntax
+            if echo "$content" | grep -qE '/dev/(tcp|udp)/[0-9.]+/' 2>/dev/null; then
+                hit="strict:/dev/tcp"
+            elif echo "$content" | grep -qE '(^|;|&&| )(nc|ncat|netcat) -e' 2>/dev/null; then
+                hit="strict:nc_exec"
+            elif echo "$content" | grep -qE 'socat .* EXEC:' 2>/dev/null; then
+                hit="strict:socat_exec"
+            elif echo "$content" | grep -qE 'python3?[[:space:]]+-c[[:space:]]+["'\'']\s*import\s+(socket|os|pty)' 2>/dev/null && \
+                 echo "$content" | grep -qE 'connect|dup2|pty\.spawn' 2>/dev/null; then
+                hit="strict:python_revshell"
+            fi
+        else
+            # Other persistence locations — broader check
+            for ind in "${C2_DOMAINS[@]}"; do
+                if echo "$content" | grep -qiF "$ind" 2>/dev/null; then
+                    hit="$ind"; break
                 fi
             done
+            if [[ -z "$hit" ]]; then
+                if echo "$content" | grep -qE '/dev/(tcp|udp)/[0-9.]+/' 2>/dev/null; then
+                    hit="payload:/dev/tcp"
+                elif echo "$content" | grep -qE '(^|;|&&| )(nc|ncat|netcat) -e' 2>/dev/null; then
+                    hit="payload:nc_exec"
+                elif echo "$content" | grep -qE 'socat .* EXEC:' 2>/dev/null; then
+                    hit="payload:socat_exec"
+                fi
+            fi
         fi
+
         if [[ -n "$hit" ]]; then
             hits=$((hits + 1))
             log_event "CRITICAL" "PERSISTENCE PAYLOAD: ${f} indicator=${hit}"
@@ -1483,14 +1652,13 @@ scan_persistence_for_payloads() {
 Path: ${f}
 Indicator: ${hit}
 
-Action: Removing malicious entries / quarantining" "CRITICAL"
-            # If it's a config-style file (cron / rc) — strip the bad lines
+Action: Removing malicious lines / quarantining" "CRITICAL"
             case "$f" in
                 */authorized_keys)
-                    # Strip lines with C2 indicators
                     if can_take_action; then
                         local tmp="${f}.epg_clean"
                         cp "$f" "${f}.epg_pre_clean.$(date +%s)" 2>/dev/null
+                        # Only strip lines that contain explicit C2 webhook URLs
                         local pat
                         pat=$(printf '%s\n' "${C2_DOMAINS[@]}" | tr '\n' '|' | sed 's/|$//')
                         grep -viE "(${pat})" "$f" > "$tmp" 2>/dev/null
@@ -1500,14 +1668,33 @@ Action: Removing malicious entries / quarantining" "CRITICAL"
                 /etc/ld.so.preload)
                     can_take_action && : > /etc/ld.so.preload 2>/dev/null
                     ;;
-                /etc/crontab|*/cron.*|/var/spool/cron/*|*/profile|*/profile.d/*|*/bashrc|*/.bashrc|*/.profile|*/.bash_profile|*/.zshrc|*/rc.local)
+                */.bashrc|*/.bash_profile|*/.profile|*/.zshrc|*/.bash_login|*/.bash_logout|*/profile|*/bashrc|*/zshrc|*/bash.bashrc)
+                    # For shell-rc files use SURGICAL line removal — only
+                    # delete lines containing the strict revshell syntax
                     if can_take_action; then
-                        local tmp="${f}.epg_clean"
                         cp "$f" "${f}.epg_pre_clean.$(date +%s)" 2>/dev/null
+                        local tmp="${f}.epg_clean"
+                        grep -vE '/dev/(tcp|udp)/[0-9.]+/|(^|;|&&| )(nc|ncat|netcat) -e|socat .* EXEC:' "$f" > "$tmp" 2>/dev/null
+                        # Sanity check — never let the file become empty
+                        if [[ -s "$tmp" ]]; then
+                            mv "$tmp" "$f" 2>/dev/null
+                        else
+                            rm -f "$tmp" 2>/dev/null
+                        fi
+                    fi
+                    ;;
+                /etc/crontab|*/cron.*|/var/spool/cron/*|*/profile.d/*|*/rc.local)
+                    if can_take_action; then
+                        cp "$f" "${f}.epg_pre_clean.$(date +%s)" 2>/dev/null
+                        local tmp="${f}.epg_clean"
                         local pat
                         pat=$(printf '%s\n' "${C2_DOMAINS[@]}" | tr '\n' '|' | sed 's/|$//')
-                        grep -viE "(${pat}|/dev/tcp/|/dev/udp/|bash -i|nc -e|ncat -e|socat .* EXEC)" "$f" > "$tmp" 2>/dev/null
-                        mv "$tmp" "$f" 2>/dev/null
+                        grep -vE "(${pat}|/dev/tcp/|/dev/udp/|(^|;|&&| )(nc|ncat|netcat) -e|socat .* EXEC:)" "$f" > "$tmp" 2>/dev/null
+                        if [[ -s "$tmp" ]]; then
+                            mv "$tmp" "$f" 2>/dev/null
+                        else
+                            rm -f "$tmp" 2>/dev/null
+                        fi
                     fi
                     ;;
                 *.service)
@@ -1653,9 +1840,12 @@ score_connection() {
     local pid="$1" user="$2" exe="$3" rip="$4" rport="$5" state="$6" cmdline="$7"
     local score=0 reasons=""
 
-    # Skip own/protected/allowlisted/private — score stays 0
+    # Skip own/trusted/allowlisted/private — score stays 0.
+    # NOTE: We use is_process_protected_user (which only spares the
+    # configured TRUSTED_USER), not is_protected_user. A reverse shell
+    # running as root MUST score and be killed — it's the most common case.
     is_own_process "$pid" && { echo "0|own"; return; }
-    is_protected_user "$user" && { echo "0|protected_user"; return; }
+    is_process_protected_user "$user" && { echo "0|trusted_user"; return; }
     is_shell_socket_allowed "$exe" && { echo "0|allowlisted_daemon"; return; }
     is_my_own_ip "$rip" && { echo "0|own_ip"; return; }
     case "$rip" in
@@ -1676,14 +1866,14 @@ score_connection() {
         score=$((score + 30)); reasons="${reasons}${reasons:+,}c2_domain:${c2_hit}"
     fi
 
-    # 3) Shell process holding socket on stdio (the smoking gun — by itself a
-    #    near-certain reverse shell, so it crosses threshold alone).
+    # 3) Shell process holding socket on stdio (the smoking gun — bumped to 50
+    #    because it alone is near-certain evidence of a reverse shell).
     if proc_is_shell "$exe" "$(basename "$exe")"; then
         local fd_dir="/proc/$pid/fd"
         if [[ -d "$fd_dir" ]]; then
             for fd in 0 1 2; do
                 if fd_is_socket "${fd_dir}/${fd}"; then
-                    score=$((score + 60)); reasons="${reasons}${reasons:+,}shell_socket_stdio:fd${fd}"
+                    score=$((score + 50)); reasons="${reasons}${reasons:+,}shell_socket_stdio:fd${fd}"
                     break
                 fi
             done
@@ -1742,7 +1932,9 @@ audit_connections_once() {
     local raw conns_tcp conns_udp
 
     if command -v ss &>/dev/null; then
-        conns_tcp=$(ss -tnp state established 2>/dev/null | tail -n +2)
+        # Capture ALL states (not just established) — catches reverse shells
+        # in SYN_SENT (just connected) and CLOSE_WAIT (lingering after kill).
+        conns_tcp=$(ss -tnp 2>/dev/null | tail -n +2)
         conns_udp=$(ss -unp 2>/dev/null | tail -n +2)
     elif command -v netstat &>/dev/null; then
         conns_tcp=$(netstat -tnp 2>/dev/null | awk 'NR>2 && $6=="ESTABLISHED"')
@@ -1838,11 +2030,28 @@ Cmd: $(echo "$cmdline" | head -c 200)
 
 Action: Killing process + severing socket + blocking IP" "CRITICAL"
 
-        # Respond
-        safe_kill_process "$pid" "$user" "conn_audit:${reasons}"
+        # Respond — kill the process AND its parent chain. A reverse shell
+        # like `bash bash.sh` has parent=bash (the wrapper). Kill both.
+        local kill_pid="$pid" depth=0
+        local seen_pids=""
+        while [[ -n "$kill_pid" && "$kill_pid" != "0" && "$kill_pid" != "1" && "$depth" -lt 5 ]]; do
+            # Cycle / re-visit guard
+            case " $seen_pids " in *" $kill_pid "*) break ;; esac
+            seen_pids="$seen_pids $kill_pid"
+            local parent_pid parent_user parent_cmd
+            parent_pid=$(ps -o ppid= -p "$kill_pid" 2>/dev/null | tr -d ' ')
+            parent_user=$(stat -c %U "/proc/$kill_pid" 2>/dev/null)
+            parent_cmd=$(tr '\0' ' ' < "/proc/$kill_pid/cmdline" 2>/dev/null)
+            is_own_process "$kill_pid" && break
+            case "$parent_cmd" in
+                *systemd*|*init*|*sshd*|*login*|/usr/lib/systemd*) break ;;
+            esac
+            safe_kill_process "$kill_pid" "$parent_user" "conn_audit:${reasons}"
+            kill_pid="$parent_pid"
+            depth=$((depth + 1))
+        done
         kernel_kill_conn "$rip" "$rport"
         safe_block_ip "$rip" "conn_audit:${reasons}"
-        # Quarantine exe if it's a dropper path
         if is_dropper_path "$exe" && [[ -f "$exe" ]]; then
             quarantine_file "$exe" "conn_audit_dropper"
         fi
@@ -3298,6 +3507,69 @@ action_uninstall() {
     press_enter
 }
 
+action_restore_quarantine() {
+    clear_screen; print_banner
+    require_root
+    echo -e "${CYAN}${BOLD}Restore from quarantine${NC}\n"
+    if [[ ! -s "${QUARANTINE_DIR}/quarantine.log" ]]; then
+        epg_ok "Quarantine is empty."
+        press_enter; return
+    fi
+    echo -e "  ${YELLOW}Quarantined files:${NC}"
+    local i=0
+    declare -a paths_orig paths_dest
+    while IFS='|' read -r ts orig dest hash reason; do
+        [[ -z "$orig" ]] && continue
+        i=$((i + 1))
+        paths_orig[i]="$orig"
+        paths_dest[i]="$dest"
+        printf "  %3d) %s\n        ${DIM}from: %s  reason: %s${NC}\n" "$i" "$orig" "$(basename "$dest")" "$reason"
+    done < "${QUARANTINE_DIR}/quarantine.log"
+    echo ""
+    echo "  Enter a number to restore that file, 'all' to restore everything,"
+    echo "  or press Enter to cancel."
+    local choice
+    choice=$(prompt "Choice")
+    if [[ -z "$choice" ]]; then
+        epg_info "Cancelled."
+        press_enter; return
+    fi
+    if [[ "$choice" == "all" ]]; then
+        local restored=0
+        local k
+        for ((k=1; k<=i; k++)); do
+            local o="${paths_orig[k]}" d="${paths_dest[k]}"
+            [[ -z "$o" || -z "$d" ]] && continue
+            if [[ -f "$d" ]]; then
+                chmod 644 "$d" 2>/dev/null
+                mkdir -p "$(dirname "$o")" 2>/dev/null
+                mv "$d" "$o" 2>/dev/null && restored=$((restored + 1))
+            fi
+        done
+        : > "${QUARANTINE_DIR}/quarantine.log"
+        epg_ok "Restored ${restored} file(s)."
+    elif [[ "$choice" =~ ^[0-9]+$ ]] && [[ "$choice" -ge 1 && "$choice" -le "$i" ]]; then
+        local o="${paths_orig[choice]}" d="${paths_dest[choice]}"
+        if [[ -f "$d" ]]; then
+            chmod 644 "$d" 2>/dev/null
+            mkdir -p "$(dirname "$o")" 2>/dev/null
+            if mv "$d" "$o" 2>/dev/null; then
+                # Remove that line from the log
+                grep -vF "$d" "${QUARANTINE_DIR}/quarantine.log" > "${QUARANTINE_DIR}/quarantine.log.tmp" 2>/dev/null
+                mv "${QUARANTINE_DIR}/quarantine.log.tmp" "${QUARANTINE_DIR}/quarantine.log" 2>/dev/null
+                epg_ok "Restored: ${o}"
+            else
+                epg_err "Failed to move ${d} → ${o}"
+            fi
+        else
+            epg_err "Quarantined file no longer exists: ${d}"
+        fi
+    else
+        epg_err "Invalid choice."
+    fi
+    press_enter
+}
+
 action_show_about() {
     clear_screen; print_banner
     cat <<EOF
@@ -3412,8 +3684,9 @@ main_menu() {
         echo -e "   9) Test Telegram alerts"
         echo -e "  10) Setup / reconfigure"
         echo -e "  11) Install as systemd service (auto-start at boot)"
-        echo -e "  12) Uninstall completely"
-        echo -e "  13) About / what's new"
+        echo -e "  12) Restore files from quarantine"
+        echo -e "  13) Uninstall completely"
+        echo -e "  14) About / what's new"
         echo -e "   0) Exit"
         echo ""
         local choice
@@ -3430,8 +3703,9 @@ main_menu() {
             9) action_test_telegram ;;
             10) action_setup ;;
             11) action_install_service ;;
-            12) action_uninstall ;;
-            13) action_show_about ;;
+            12) action_restore_quarantine ;;
+            13) action_uninstall ;;
+            14) action_show_about ;;
             0|q|Q|exit) clear_screen; epg_ok "Stay safe."; exit 0 ;;
             *) ;;
         esac
